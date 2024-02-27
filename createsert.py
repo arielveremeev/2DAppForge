@@ -34,10 +34,10 @@ if __name__ == "__main__":
     cert_file = "server.crt"
     key_file = "server.key"
 
-    if args.directory:
-        os.makedirs(args.directory, exist_ok=True)
-        cert_file = os.path.join(args.directory, cert_file)
-        key_file = os.path.join(args.directory, key_file)
+    if args.outdir:
+        os.makedirs(args.outdir, exist_ok=True)
+        cert_file = os.path.join(args.outdir, cert_file)
+        key_file = os.path.join(args.outdir, key_file)
 
     # Get the IP address of the host
     ip_address = socket.gethostbyname(socket.gethostname())
