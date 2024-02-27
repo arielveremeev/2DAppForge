@@ -2,6 +2,7 @@ import sqlite3
 import bcrypt
 import socket
 import threading
+import ssl
 
 def receive_messages(client_socket):
     while True:
@@ -30,6 +31,10 @@ def send_user(client_socket):
             break
 
 def main():
+    # Create an SSL context with default settings and disable certificate verification
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
     # Server configuration
     host = '192.168.0.204'
     port = 1234
@@ -37,13 +42,14 @@ def main():
     # Connect to the server
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))
-    
+    ssl_client_socket =  context.wrap_socket(client_socket, server_hostname=host)
+
     # Start a thread to receive messages from the server
-    receive_thread = threading.Thread(target=receive_messages, args=(client_socket,))
+    receive_thread = threading.Thread(target=receive_messages, args=(ssl_client_socket,))
     receive_thread.start()
     
     # Start a thread to send messages to the server
-    send_thread = threading.Thread(target=send_user, args=(client_socket,))
+    send_thread = threading.Thread(target=send_user, args=(ssl_client_socket,))
     send_thread.start()
 
 if __name__ == "__main__":

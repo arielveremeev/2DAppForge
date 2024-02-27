@@ -2,7 +2,7 @@ import sqlite3
 import bcrypt
 import socket
 import threading
-
+import ssl
 
 
 class DatabaseManager:
@@ -139,6 +139,9 @@ def handle_client(client_socket, address, clients,db_manager):
 
 
 def main():
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context.load_cert_chain(certfile="server.crt", keyfile="server.key")
+
     db_manager=DatabaseManager()
     server_socket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     server_socket.bind(("192.168.0.204",1234))
@@ -148,10 +151,10 @@ def main():
     while True:
         client_socket, address = server_socket.accept()
         print("Accepted connection from", address)
-
-        clients.append(client_socket)
+        ssl_client_socket = context.wrap_socket(client_socket, server_side=True)
+        clients.append(ssl_client_socket)
         
-        client_thread = threading.Thread(target=handle_client, args=(client_socket, address, clients,db_manager))
+        client_thread = threading.Thread(target=handle_client, args=(ssl_client_socket, address, clients,db_manager))
         client_thread.start()
 
 if __name__ == '__main__' :
