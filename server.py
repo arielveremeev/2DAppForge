@@ -3,7 +3,7 @@ import bcrypt
 import socket
 import threading
 import ssl
-
+import ipaddress
 
 class DatabaseManager:
     def __init__(self, db_name='app_database.db'):
@@ -141,10 +141,12 @@ def handle_client(client_socket, address, clients,db_manager):
 def main():
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain(certfile="server.crt", keyfile="server.key")
+    ip_address = socket.gethostbyname(socket.gethostname())
+    ip_address = ipaddress.ip_address(ip_address)
 
     db_manager=DatabaseManager()
     server_socket=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    server_socket.bind(("192.168.0.204",1234))
+    server_socket.bind((str(ip_address),1234))
     server_socket.listen(5)
     print(f"server listening")
     clients=[]
