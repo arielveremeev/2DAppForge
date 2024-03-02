@@ -1,8 +1,10 @@
 import sqlite3
 import bcrypt
+import argparse
 import socket
 import threading
 import ssl
+import ipaddress
 
 def receive_messages(client_socket):
     while True:
@@ -15,12 +17,10 @@ def receive_messages(client_socket):
             print("Error receiving message:", e)
             break
 
-def send_user(client_socket):
+def send_user(client_socket,username,password):
     while True:
         try:
             # Input message from the user
-            username = input("Enter username: ")
-            password= input("Enter password: ")
             message=username+','+password
             if message == 'exit':
                 break
@@ -30,13 +30,35 @@ def send_user(client_socket):
             print("Error sending message:", e)
             break
 
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Parse IP address, username, and password.')
+    parser.add_argument("--ip_address", type=str,nargs='?', help='The IP address')
+    parser.add_argument("--username", type=str,nargs='?', help='The username')
+    parser.add_argument("--password", type=str,nargs='?', help='The password')
+    return parser.parse_args()
+
 def main():
+
+    args = parse_arguments()
+
+    if(args.ip_address==None):
+        ip_address = socket.gethostbyname(socket.gethostname())
+        ip_address = ipaddress.ip_address(ip_address)
+        args.ip_address=str(ip_address)
+    if(args.username==None and args.password==None):
+        args.username=input("enter username : ")
+        args.password=input("enter password : ")
+    elif(args.username==None and args.password):
+        args.username=input("enter username : ")
+    elif(args.username and args.password==None):
+        args.password=input("enter password : ")
+
     # Create an SSL context with default settings and disable certificate verification
     context = ssl.create_default_context()
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
     # Server configuration
-    host = '192.168.0.204'
+    host = args.ip_address
     port = 1234
     
     # Connect to the server
@@ -49,7 +71,7 @@ def main():
     receive_thread.start()
     
     # Start a thread to send messages to the server
-    send_thread = threading.Thread(target=send_user, args=(ssl_client_socket,))
+    send_thread = threading.Thread(target=send_user, args=(ssl_client_socket,args.username,args.password,))
     send_thread.start()
 
 if __name__ == "__main__":
