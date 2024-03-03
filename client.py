@@ -19,14 +19,28 @@ def receive_messages(client_socket):
             break
 
 def send_user(client_socket,username,password):
+    login=username+','+password
+    client_socket.send(login.encode('utf-8'))
+    
+    time.sleep(2)
     while True:
         try:
             # Input message from the user
-            message=username+','+password
-            if message == 'exit':
-                break
-            # Send message to the server
-            client_socket.send(message.encode('utf-8'))
+            message=input("enter you command : ")
+            if(message=="kuku"):
+                print("sefdg")
+            elif(message=="sign up"):
+                client_socket.send(message.encode('utf-8'))
+                username=input("enter username : ")
+                password=input("enter password : ")
+                message=username+','+password
+                client_socket.send(message.encode('utf-8'))
+            elif(message=="print users"):
+                client_socket.send(message.encode('utf-8'))
+                time.sleep(3)
+            else:
+                client_socket.send(message.encode('utf-8'))
+            time.sleep(1)
         except Exception as e:
             print("Error sending message:", e)
             break

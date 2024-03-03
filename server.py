@@ -48,6 +48,18 @@ class DatabaseManager:
             print( row[0])
             print( row[1],"\n")
             print( row[2],"\n")
+    
+    def GetUsers(self):
+        Users=""
+        cursor=self.cursor.execute("SELECT username,password,salt FROM users")
+        for row in cursor:
+            print( row[0])
+            username=row[0]
+            if(row!=len(cursor.fetchall())):
+                Users+=username+','
+            else:
+                Users+=username
+        return Users
 
     def IfExists(self,username):
         #check if the username exists by username
@@ -105,7 +117,17 @@ def ValidateLogin(username,password,db_manager):
 
 def handle_client(client_socket, address, clients,db_manager):
     print(f"accepted connection from {address}")
-
+    data = client_socket.recv(1024)
+    message = data.decode('utf-8')
+    user=message.split(",")
+    username = user[0]
+    password = user[1]
+    print(user[0])
+    print(user[1])
+    if(ValidateLogin(username,password,db_manager)==True):
+        message="succesfull login from"+ str(address)
+        print(message)
+        client_socket.send(message.encode('utf-8'))
 
     while True:
         try:
@@ -113,19 +135,28 @@ def handle_client(client_socket, address, clients,db_manager):
             if not data:
                 break
             message = data.decode('utf-8')
-            user=message.split(",")
-            username = user[0]
-            password = user[1]
-            print(user[0])
-            print(user[1])
-            if(ValidateLogin(username,password,db_manager)==True):
-                print(f"succesfull login from {address}")
-            print(f"Received from {address}")
-
             if "all" in message:
                 print("contains all")
                 for c in clients:
                     c.send(message.encode('utf-8'))
+            elif(message=="sign up"):
+                data = client_socket.recv(1024)
+                message = data.decode('utf-8')
+                user=message.split(",")
+                username = user[0]
+                password = user[1]
+                print(user[0])
+                print(user[1])
+                if(db_manager.IfExists(username)==True):
+                    print(f"user already exists")
+                    client_socket.send("user already exists".encode('utf-8'))
+                else:
+                    db_manager.insert_user(username,password)
+                    client_socket.send("successfully added user".encode('utf-8'))
+            elif(message=="print users"):
+                db_manager.PrintUsers()
+                Users=db_manager.GetUsers()
+                client_socket.send("users are : ","\n",Users.encode('utf-8'))
             else:
                 # Echo back the message
                 client_socket.sendall(data)
