@@ -5,6 +5,7 @@ import socket
 import threading
 import ssl
 import ipaddress
+import sys, time
 
 def receive_messages(client_socket):
     while True:
@@ -29,6 +30,9 @@ def send_user(client_socket,username,password):
         except Exception as e:
             print("Error sending message:", e)
             break
+
+def has_live_threads(threads):
+    return True in [t.is_alive() for t in threads]
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Parse IP address, username, and password.')
@@ -61,6 +65,7 @@ def main():
     host = args.ip_address
     port = 1234
     
+    threads = []
     # Connect to the server
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))
@@ -69,10 +74,27 @@ def main():
     # Start a thread to receive messages from the server
     receive_thread = threading.Thread(target=receive_messages, args=(ssl_client_socket,))
     receive_thread.start()
+    threads.append(receive_thread)
     
     # Start a thread to send messages to the server
     send_thread = threading.Thread(target=send_user, args=(ssl_client_socket,args.username,args.password,))
     send_thread.start()
+    threads.append(send_thread)
+
+    while has_live_threads(threads):
+        try:
+            # synchronization timeout of threads kill
+            [t.join(1) for t in threads
+             if t is not None and t.is_alive()]
+        except KeyboardInterrupt:
+            # Ctrl-C handling and send kill to threads
+            print("Sending kill to threads...")
+            for t in threads:
+                t.kill_received = True
+            ssl_client_socket.close()
+
+    print ("Exited")
+
 
 if __name__ == "__main__":
     main()
