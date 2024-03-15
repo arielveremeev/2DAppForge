@@ -35,9 +35,6 @@ def send_user(client_socket,username,password):
                 password=input("enter password : ")
                 message=username+','+password
                 client_socket.send(message.encode('utf-8'))
-            elif(message=="print users"):
-                client_socket.send(message.encode('utf-8'))
-                time.sleep(3)
             else:
                 client_socket.send(message.encode('utf-8'))
             time.sleep(1)

@@ -50,15 +50,11 @@ class DatabaseManager:
             print( row[2],"\n")
     
     def GetUsers(self):
-        Users=""
-        cursor=self.cursor.execute("SELECT username,password,salt FROM users")
-        for row in cursor:
-            print( row[0])
-            username=row[0]
-            if(row!=len(cursor.fetchall())):
-                Users+=username+','
-            else:
-                Users+=username
+        Users=[]
+        cursor=self.cursor.execute("SELECT username FROM users")
+        for usr in cursor:
+            print(usr[0])
+            Users.append(usr[0])
         return Users
 
     def IfExists(self,username):
@@ -154,9 +150,10 @@ def handle_client(client_socket, address, clients,db_manager):
                     db_manager.insert_user(username,password)
                     client_socket.send("successfully added user".encode('utf-8'))
             elif(message=="print users"):
-                db_manager.PrintUsers()
+                #db_manager.PrintUsers()
                 Users=db_manager.GetUsers()
-                client_socket.send("users are : ","\n",Users.encode('utf-8'))
+                for usr in Users:
+                    client_socket.sendall(("users are : " + usr).encode('utf-8'))
             else:
                 # Echo back the message
                 client_socket.sendall(data)
