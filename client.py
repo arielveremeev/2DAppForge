@@ -6,14 +6,16 @@ import threading
 import ssl
 import ipaddress
 import sys, time
+import json
 
 def receive_messages(client_socket):
     while True:
         try:
             # Receive message from server
-            message = client_socket.recv(1024).decode('utf-8')
-            if message:
-                print("Received message from server:", message)
+            jMessage = client_socket.recv(1024).decode('utf-8')
+            if jMessage:
+                message=json.loads(jMessage)
+                print(message["message"])
         except Exception as e:
             print("Error receiving message:", e)
             break
@@ -26,7 +28,7 @@ def send_user(client_socket,username,password):
     while True:
         try:
             # Input message from the user
-            message=input("enter you command : ")
+            message=input(">:")
             if(message=="kuku"):
                 print("sefdg")
             elif(message=="sign up"):

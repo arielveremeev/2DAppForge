@@ -4,6 +4,7 @@ import socket
 import threading
 import ssl
 import ipaddress
+import json
 
 class DatabaseManager:
     def __init__(self, db_name='app_database.db'):
@@ -75,7 +76,6 @@ class DatabaseManager:
             return row[0]
     
     def GetSalt(self,username):
-        print("from salt", username)
         cursor=self.cursor.execute("SELECT salt FROM users WHERE username=(?) ",(username,))
         if(cursor==" "):
             print("user doesnt exist")
@@ -121,9 +121,12 @@ def handle_client(client_socket, address, clients,db_manager):
     print(user[0])
     print(user[1])
     if(ValidateLogin(username,password,db_manager)==True):
-        message="succesfull login from"+ str(address)
-        print(message)
-        client_socket.send(message.encode('utf-8'))
+        message={"message":"succesfull login from"+ str(address),
+                 "status":"success",
+                 "data":None}
+        jMessage=json.dumps(message)
+        print(jMessage)
+        client_socket.sendall(jMessage.encode('utf-8'))
 
     while True:
         try:
@@ -131,6 +134,7 @@ def handle_client(client_socket, address, clients,db_manager):
             if not data:
                 break
             message = data.decode('utf-8')
+
             if "all" in message:
                 print("contains all")
                 for c in clients:
@@ -145,18 +149,22 @@ def handle_client(client_socket, address, clients,db_manager):
                 print(user[1])
                 if(db_manager.IfExists(username)==True):
                     print(f"user already exists")
-                    client_socket.send("user already exists".encode('utf-8'))
+                    client_socket.sendall(json.dumps("user already exists").encode('utf-8'))
                 else:
                     db_manager.insert_user(username,password)
-                    client_socket.send("successfully added user".encode('utf-8'))
+                    client_socket.sendall(json.dumps("successfully added user").encode('utf-8'))
             elif(message=="print users"):
                 #db_manager.PrintUsers()
                 Users=db_manager.GetUsers()
-                for usr in Users:
-                    client_socket.sendall(("users are : " + usr).encode('utf-8'))
+                json_users=json.dumps(Users)
+                client_socket.sendall(json_users.encode('utf-8'))
             else:
                 # Echo back the message
-                client_socket.sendall(data)
+                data={"message":message,
+                      "status":"success",
+                      "data":None}
+                jData=json.dumps(data)
+                client_socket.sendall(jData.encode('utf-8'))
         
         except Exception as e:
             print("error",e)
