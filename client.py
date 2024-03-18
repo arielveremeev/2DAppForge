@@ -16,6 +16,9 @@ def receive_messages(client_socket):
             if jMessage:
                 message=json.loads(jMessage)
                 print(message["message"])
+                if message["data"] != None:
+                    for data in message["data"]:
+                        print(data)
         except Exception as e:
             print("Error receiving message:", e)
             break

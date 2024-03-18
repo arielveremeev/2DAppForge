@@ -156,15 +156,19 @@ def handle_client(client_socket, address, clients,db_manager):
             elif(message=="print users"):
                 #db_manager.PrintUsers()
                 Users=db_manager.GetUsers()
-                json_users=json.dumps(Users)
-                client_socket.sendall(json_users.encode('utf-8'))
+                data={"message":"users are : ",
+                      "status":"success",
+                      "data":Users}
+
             else:
                 # Echo back the message
                 data={"message":message,
                       "status":"success",
                       "data":None}
-                jData=json.dumps(data)
-                client_socket.sendall(jData.encode('utf-8'))
+                
+
+            jData=json.dumps(data)
+            client_socket.sendall(jData.encode('utf-8'))
         
         except Exception as e:
             print("error",e)
