@@ -24,6 +24,16 @@ class DatabaseManager:
                 salt TEXT NOT NULL
             )
         ''')
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS sessions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                type TEXT NOT NULL,
+                owner TEXT NOT NULL,
+                creation_date TEXT NOT NULL,
+                max_participants TEXT NOT NULL
+            )
+        ''')
     
         
         self.conn.commit()
@@ -41,6 +51,37 @@ class DatabaseManager:
                 hashed_pwd = self.HashPassword(password,salt)
                 self.cursor.execute('INSERT INTO users (username, password,salt) VALUES (?, ?, ?)', (username, hashed_pwd ,salt.decode('utf-8'),))
                 self.conn.commit()
+
+    def Create_Session(self,session):
+        name=session[0]
+        seshtype=session[1]
+        owner=session[2]
+        maxpart=session[3]
+        credate=session[4]
+        count=self.cursor.execute("SELECT count(*) FROM sessions WHERE name=(?)",(name,)) 
+        for row in count:
+            if(row[0]!=0):
+                print("a session with this name already exists")
+                return False
+            else:
+                self.cursor.execute('INSERT INTO sessions(name,type,owner,creation_date,max_participants) VALUES (?,?,?,?,?)',(name,seshtype,owner,credate,maxpart))
+                self.conn.commit()
+                print("session created")
+                return True
+
+    def Print_sessions(self):
+        cursor=self.cursor.execute("SELECT name,owner FROM sessions")
+        for sess in cursor:
+            print(sess)
+
+
+    def Get_Sessions(self):
+        sessions=[]
+        cursor=self.cursor.execute("SELECT name,owner FROM sessions")
+        for sess in cursor:
+            print(sess)
+            sessions.append(sess)
+        return sessions
 
     def PrintUsers(self):
         #print all current registered users in the database
@@ -160,6 +201,23 @@ def handle_client(client_socket, address, clients,db_manager):
                       "status":"success",
                       "data":Users}
 
+            elif(message=="create session"):
+                data=client_socket.recv(1024)
+                session=(data.decode('utf-8')).split(",")
+                if(db_manager.Create_Session(session)==False):
+                    data={"message":"session not created, session with this name already exists",
+                          "status":"fail",
+                          "data":None}
+                else:
+                    data={"message":"new session created",
+                          "status":"success",
+                          "data":None}
+            
+            elif(message=="print sessions"):
+                sessions=db_manager.Get_Sessions()
+                data={"message":"sessions and owners are : ",
+                      "status":"success",
+                      "data":sessions}
             else:
                 # Echo back the message
                 data={"message":message,

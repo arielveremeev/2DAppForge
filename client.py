@@ -6,6 +6,7 @@ import threading
 import ssl
 import ipaddress
 import sys, time
+from datetime import date
 import json
 
 def receive_messages(client_socket):
@@ -32,16 +33,20 @@ def send_user(client_socket,username,password):
         try:
             # Input message from the user
             message=input(">:")
-            if(message=="kuku"):
-                print("sefdg")
-            elif(message=="sign up"):
-                client_socket.send(message.encode('utf-8'))
+            client_socket.send(message.encode('utf-8'))
+            if(message=="sign up"):
                 username=input("enter username : ")
                 password=input("enter password : ")
                 message=username+','+password
                 client_socket.send(message.encode('utf-8'))
-            else:
-                client_socket.send(message.encode('utf-8'))
+            elif(message=="create session"):
+                name=input("enter name of session : ")
+                seshtype=input("enter type of session : ")
+                owner=username
+                maxpart=input("enter the max amount of participants in the session : ")
+                credate=str(date.today())
+                session=name+','+seshtype+','+owner+','+maxpart+','+credate
+                client_socket.send(session.encode('utf-8'))
             time.sleep(1)
         except Exception as e:
             print("Error sending message:", e)
