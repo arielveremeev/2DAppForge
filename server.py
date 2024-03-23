@@ -1,9 +1,11 @@
 import sqlite3
 import bcrypt
+import argparse
 import socket
 import threading
 import ssl
 import ipaddress
+from datetime import date
 import json
 
 class DatabaseManager:
@@ -54,17 +56,17 @@ class DatabaseManager:
 
     def Create_Session(self,session):
         name=session[0]
-        seshtype=session[1]
-        owner=session[2]
-        maxpart=session[3]
-        credate=session[4]
+        sesstype=session[1]
+        maxpart=session[2]
+        owner=session[3]
+        credate=str(date.today())
         count=self.cursor.execute("SELECT count(*) FROM sessions WHERE name=(?)",(name,)) 
         for row in count:
             if(row[0]!=0):
                 print("a session with this name already exists")
                 return False
             else:
-                self.cursor.execute('INSERT INTO sessions(name,type,owner,creation_date,max_participants) VALUES (?,?,?,?,?)',(name,seshtype,owner,credate,maxpart))
+                self.cursor.execute('INSERT INTO sessions(name,type,owner,creation_date,max_participants) VALUES (?,?,?,?,?)',(name,sesstype,owner,credate,maxpart))
                 self.conn.commit()
                 print("session created")
                 return True
@@ -154,56 +156,76 @@ def ValidateLogin(username,password,db_manager):
 
 def handle_client(client_socket, address, clients,db_manager):
     print(f"accepted connection from {address}")
-    data = client_socket.recv(1024)
-    message = data.decode('utf-8')
-    user=message.split(",")
-    username = user[0]
-    password = user[1]
-    print(user[0])
-    print(user[1])
-    if(ValidateLogin(username,password,db_manager)==True):
-        message={"message":"succesfull login from"+ str(address),
-                 "status":"success",
-                 "data":None}
-        jMessage=json.dumps(message)
-        print(jMessage)
-        client_socket.sendall(jMessage.encode('utf-8'))
-
     while True:
         try:
             data = client_socket.recv(1024)
             if not data:
                 break
-            message = data.decode('utf-8')
-
-            if "all" in message:
+            messagestr = data.decode('utf-8')
+            command=messagestr.split(',')
+            if len(command)==0:
+                continue
+            if "all" == command[0]:
                 print("contains all")
-                for c in clients:
-                    c.send(message.encode('utf-8'))
-            elif(message=="sign up"):
-                data = client_socket.recv(1024)
-                message = data.decode('utf-8')
-                user=message.split(",")
-                username = user[0]
-                password = user[1]
-                print(user[0])
-                print(user[1])
-                if(db_manager.IfExists(username)==True):
-                    print(f"user already exists")
-                    client_socket.sendall(json.dumps("user already exists").encode('utf-8'))
+                if(len(command[1:])==0):
+                    data={'message':"be more precise",
+                        "status":"fail",
+                        "data":None}
                 else:
-                    db_manager.insert_user(username,password)
-                    client_socket.sendall(json.dumps("successfully added user").encode('utf-8'))
-            elif(message=="print users"):
+                    data={'message':' '.join(command[1:]),
+                        "status":"success",
+                        "data":None}
+                jData=json.dumps(data)
+                for c in clients:
+                    c.send(jData.encode('utf-8'))
+                continue
+            elif(command[0]=="login"):
+                if(len(command[1:])!=2):
+                    data={'message':"missing arguments for login",
+                        "status":"fail",
+                        "data":None}
+                else:
+                    username = command[1]
+                    password = command[2]
+                    print(username)
+                    print(password)
+                    if(ValidateLogin(username,password,db_manager)==True):
+                        data={"message":"succesfull login from"+ str(address),
+                                "status":"success",
+                                "data":None}
+                    else:
+                        data={"message":"unsuccessful login",
+                                "status":"fail",
+                                "data":None}
+            elif(command[0]=="sign_up"):
+                if(len(command[1:])!=2):
+                    data={'message':"missing arguments for sign up",
+                        "status":"fail",
+                        "data":None}
+                else:
+                    username = command[1]
+                    password = command[2]
+                    print(username)
+                    print(password)
+                    if(db_manager.IfExists(username)==True):
+                        print(f"user already exists")
+                        data={'message':"username in use",
+                        "status":"fail",
+                        "data":None}
+                    else:
+                        db_manager.insert_user(username,password)
+                        data={'message':"successfully added user",
+                        "status":"success",
+                        "data":None}
+            elif(command[0]=="print_users"):
                 #db_manager.PrintUsers()
                 Users=db_manager.GetUsers()
                 data={"message":"users are : ",
                       "status":"success",
                       "data":Users}
-
-            elif(message=="create session"):
-                data=client_socket.recv(1024)
-                session=(data.decode('utf-8')).split(",")
+            elif(command[0]=="create_session"):
+                session=command[1:]
+                session.append(username)
                 if(db_manager.Create_Session(session)==False):
                     data={"message":"session not created, session with this name already exists",
                           "status":"fail",
@@ -213,14 +235,14 @@ def handle_client(client_socket, address, clients,db_manager):
                           "status":"success",
                           "data":None}
             
-            elif(message=="print sessions"):
+            elif(command[0]=="print_sessions"):
                 sessions=db_manager.Get_Sessions()
                 data={"message":"sessions and owners are : ",
                       "status":"success",
                       "data":sessions}
             else:
                 # Echo back the message
-                data={"message":message,
+                data={"message":messagestr,
                       "status":"success",
                       "data":None}
                 

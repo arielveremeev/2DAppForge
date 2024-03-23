@@ -24,30 +24,34 @@ def receive_messages(client_socket):
             print("Error receiving message:", e)
             break
 
-def send_user(client_socket,username,password):
-    login=username+','+password
-    client_socket.send(login.encode('utf-8'))
-    
+def send_user(client_socket,username = None,password = None):    
+    message ="login"
     time.sleep(2)
     while True:
         try:
             # Input message from the user
-            message=input(">:")
-            client_socket.send(message.encode('utf-8'))
-            if(message=="sign up"):
+            if message == None:
+                message=input(">:")
+            command=message.split(" ")
+            if(command[0] in ['',' ',""," "]):
+                print("wrong input")
+                continue
+            if(command[0]=="sign_up"):
                 username=input("enter username : ")
                 password=input("enter password : ")
-                message=username+','+password
-                client_socket.send(message.encode('utf-8'))
-            elif(message=="create session"):
-                name=input("enter name of session : ")
-                seshtype=input("enter type of session : ")
-                owner=username
-                maxpart=input("enter the max amount of participants in the session : ")
-                credate=str(date.today())
-                session=name+','+seshtype+','+owner+','+maxpart+','+credate
-                client_socket.send(session.encode('utf-8'))
+                message=','.join([command[0],username,password])
+            elif(command[0]=="login"):
+                if username == None:
+                    username=input("enter username : ")
+                if password == None:
+                    password=input("enter password : ")
+                message=','.join([command[0],username,password])
+            else:
+                message=','.join(command)
+            
+            client_socket.send(message.encode('utf-8'))
             time.sleep(1)
+            message = None
         except Exception as e:
             print("Error sending message:", e)
             break
