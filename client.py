@@ -40,12 +40,16 @@ def send_user(client_socket,username = None,password = None):
                 username=input("enter username : ")
                 password=input("enter password : ")
                 message=','.join([command[0],username,password])
+                username=None
+                password=None
             elif(command[0]=="login"):
                 if username == None:
                     username=input("enter username : ")
                 if password == None:
                     password=input("enter password : ")
                 message=','.join([command[0],username,password])
+                username=None
+                password=None
             else:
                 message=','.join(command)
             

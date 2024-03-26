@@ -140,7 +140,7 @@ class DatabaseManager:
 
 def ValidateLogin(username,password,db_manager):
 #checks if the username matches the password written in the database
-    print("Validate Loigin", username," ", password)   
+    print("Validate Login", username," ", password)   
     stored_salt = db_manager.GetSalt(username)
     stored_pwd = db_manager.GetPassword(username)
     hashed_entered_pwd=db_manager.HashPassword(password,stored_salt.encode('utf-8')) 
@@ -156,6 +156,74 @@ def ValidateLogin(username,password,db_manager):
 
 def handle_client(client_socket, address, clients,db_manager):
     print(f"accepted connection from {address}")
+    while True:
+        data = client_socket.recv(1024)
+        if not data:
+            data={'message':"data not sent try again",
+                "status":"success",
+                "data":None}
+        messagestr=data.decode('utf-8')
+        user=messagestr.split(',')
+        if(user[0]=="sign_up" or user[0]=="login"):
+            if(user[0]=="sign_up"):
+                if(len(user[1:])!=2):
+                    data={'message':"missing arguments for sign up",
+                        "status":"fail",
+                        "data":None}
+                else:
+                    username = user[1]
+                    password = user[2]
+                    print(username)
+                    print(password)
+                    if(db_manager.IfExists(username)==True):
+                        print(f"user already exists")
+                        data={'message':"username in use or doesnt exist",
+                        "status":"fail",
+                        "data":None}
+                    else:
+                        db_manager.insert_user(username,password)
+                        data={'message':"successfully added user now please login using the same info",
+                        "status":"success",
+                        "data":None}
+                jData=json.dumps(data)
+                client_socket.sendall(jData.encode('utf-8'))
+    
+            else:
+                if(len(user[1:])!=2):
+                    data={'message':"missing arguments for login try again",
+                        "status":"fail",
+                        "data":None}
+                else:
+                    username = user[1]
+                    password = user[2]
+                    print(username)
+                    print(password)
+                    if(db_manager.IfExists(username)==False):
+                        data={"message":"user doesnt exist",
+                            "status":"fail",
+                            "data":None}
+                    elif(ValidateLogin(username,password,db_manager)==True):
+                        data={"message":"succesfull login from"+ str(address),
+                                "status":"success",
+                                "data":None}
+                    else:
+                        data={"message":"wrong password try again",
+                                "status":"fail",
+                                "data":None}
+                    if(data.get("status")=="success"):
+                        jData=json.dumps(data)
+                        client_socket.sendall(jData.encode('utf-8'))
+                        break
+                    else:
+                        jData=json.dumps(data)
+                        client_socket.sendall(jData.encode('utf-8'))
+        else:
+            data={"message":"no such command please log in to use other commands",
+                "status":"fail",
+                "data":None}
+            jData=json.dumps(data)
+            client_socket.sendall(jData.encode('utf-8'))
+    
     while True:
         try:
             data = client_socket.recv(1024)
@@ -179,44 +247,6 @@ def handle_client(client_socket, address, clients,db_manager):
                 for c in clients:
                     c.send(jData.encode('utf-8'))
                 continue
-            elif(command[0]=="login"):
-                if(len(command[1:])!=2):
-                    data={'message':"missing arguments for login",
-                        "status":"fail",
-                        "data":None}
-                else:
-                    username = command[1]
-                    password = command[2]
-                    print(username)
-                    print(password)
-                    if(ValidateLogin(username,password,db_manager)==True):
-                        data={"message":"succesfull login from"+ str(address),
-                                "status":"success",
-                                "data":None}
-                    else:
-                        data={"message":"unsuccessful login",
-                                "status":"fail",
-                                "data":None}
-            elif(command[0]=="sign_up"):
-                if(len(command[1:])!=2):
-                    data={'message':"missing arguments for sign up",
-                        "status":"fail",
-                        "data":None}
-                else:
-                    username = command[1]
-                    password = command[2]
-                    print(username)
-                    print(password)
-                    if(db_manager.IfExists(username)==True):
-                        print(f"user already exists")
-                        data={'message':"username in use",
-                        "status":"fail",
-                        "data":None}
-                    else:
-                        db_manager.insert_user(username,password)
-                        data={'message':"successfully added user",
-                        "status":"success",
-                        "data":None}
             elif(command[0]=="print_users"):
                 #db_manager.PrintUsers()
                 Users=db_manager.GetUsers()
