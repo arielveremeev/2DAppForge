@@ -28,7 +28,6 @@ def receive_messages(client_socket,event):
 
 def send_user(client_socket,event,username = None,password = None):    
     message ="login"
-    time.sleep(2)
     while True:
         try:
             # Input message from the user
