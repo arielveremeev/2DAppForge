@@ -149,14 +149,23 @@ def handle_client(client_socket, address, clients,db_manager):
             #join an existing session
             elif(command[0]=="join_session"):
                 session=command[1]
-                if(db_manager.Join_Session(username,session)==True):
-                    data={"message":"successfully joined session ",
-                        "status":"success",
-                        "data":None}
+                data={"message":"",
+                      "status":"fail",
+                      "data":None}
+                if(db_manager.Does_Sess_Exist(session)==True):
+                    if(db_manager.Is_User_in_sess(username,session)==False):
+                        if(db_manager.Can_Join(session)==True):
+                            db_manager.Insert_Active_User(username,session)
+                            data["message"]="successfully joined session"
+                            data["status"]="success"
+                        else:
+                            data["message"]="cant join due to max participant amount"
+                    else:
+                        data["message"]="cant join user is already in this session"
                 else:
-                    data={"message":"couldnt join session",
-                        "status":"fail",
-                        "data":None}
+                    data["message"]="there isnt a session with this name"
+                print(data["message"])
+
 
             else:
                 # Echo back the message

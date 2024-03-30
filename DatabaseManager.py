@@ -102,9 +102,11 @@ class DatabaseManager:
         print(username)
         print(sessname)
         row=cursor.fetchone()
-        if(len(row)==0):
-            return False
-        return True
+        if(row is not None):
+            if(len(row)==0):
+                return False
+            return True
+        return False
     def Can_Join(self,sessname):
         if(self.Does_Sess_Exist(sessname)==True):
             cursor=self.cursor.execute('SELECT session FROM active_session_users WHERE session= (?)',(sessname,))
@@ -125,23 +127,10 @@ class DatabaseManager:
             print('session doesnt exist')
             return False
 
+    def Insert_Active_User(self,username,sessname):
+        self.cursor.execute('INSERT INTO active_session_users(username,session) VALUES (?,?)',(username,sessname))
+        self.conn.commit()
 
-    def Join_Session(self,username,sessname):
-        if(self.Does_Sess_Exist(sessname)==True):
-            if(self.Is_User_in_sess(username,sessname)==False):
-                if(self.Can_Join(sessname)==True):
-                    self.cursor.execute('INSERT INTO active_session_users(username,session) VALUES (?,?)',(username,sessname))
-                    self.conn.commit()
-                    return True            
-                else:
-                    print("cant join due to max participant amount")
-                    return False
-            else:
-                print("cant join user is already in this session")
-                return False
-        else:
-            print("there isnt a session with this name")
-            return False
 
     def PrintUsers(self):
         #print all current registered users in the database
