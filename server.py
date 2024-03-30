@@ -16,8 +16,9 @@ class DatabaseManager:
         self.create_table()
 
     def create_table(self):
-        # Create a table to store user data if it doesn't exist
-        #self.cursor.execute('''drop table users''')
+        self.cursor.execute("DELETE FROM active_session_users")
+        self.cursor.execute("DROP TABLE IF EXISTS active_session_users")
+
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,6 +35,13 @@ class DatabaseManager:
                 owner TEXT NOT NULL,
                 creation_date TEXT NOT NULL,
                 max_participants TEXT NOT NULL
+            )
+        ''')
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS active_session_users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                session TEXT NOT NULL
             )
         ''')
     
@@ -84,6 +92,66 @@ class DatabaseManager:
             print(sess)
             sessions.append(sess)
         return sessions
+
+    def Does_Sess_Exist(self,name):
+        cursor=self.cursor.execute("SELECT name FROM sessions")
+        for sess in cursor:
+            if(name==sess[0]):
+                print("session with this name exists")
+                return True
+        return False
+
+    def Is_User_in_sess(self,username,sessname):
+        cursor=self.cursor.execute("SELECT username,session FROM active_session_users")
+        print(username)
+        print(sessname)
+        for user in cursor:
+            print(user[0])
+            print(user[1])
+            if(username==user[0] and sessname==user[1]):
+                print('user already in this session')
+                return True
+            else:
+                print('user isnt in this session')
+                return False
+        return False
+    def Can_Join(self,sessname):
+        if(self.Does_Sess_Exist(sessname)==True):
+            cursor=self.cursor.execute('SELECT session FROM active_session_users WHERE session= (?)',(sessname,))
+            rows=cursor.fetchall()
+            if(len(rows)==0):
+                return True
+            count=len(rows)
+            maxpart_query=self.cursor.execute("SELECT max_participants FROM sessions WHERE name= (?)",(sessname,))
+            maxpart_row=maxpart_query.fetchone()
+            if(maxpart_row is not None):
+                maxpart=int(maxpart_row[0])
+
+            if(count<maxpart):
+                return True
+            else:
+                return False
+        else:
+            print('session doesnt exist')
+            return False
+
+
+    def Join_Session(self,username,sessname):
+        if(self.Does_Sess_Exist(sessname)==True):
+            if(self.Is_User_in_sess(username,sessname)==False):
+                if(self.Can_Join(sessname)==True):
+                    self.cursor.execute('INSERT INTO active_session_users(username,session) VALUES (?,?)',(username,sessname))
+                    self.conn.commit()
+                    return True            
+                else:
+                    print("cant join due to max participant amount")
+                    return False
+            else:
+                print("cant join user is already in this session")
+                return False
+        else:
+            print("there isnt a session with this name")
+            return False
 
     def PrintUsers(self):
         #print all current registered users in the database
@@ -156,6 +224,7 @@ def ValidateLogin(username,password,db_manager):
 
 def handle_client(client_socket, address, clients,db_manager):
     print(f"accepted connection from {address}")
+    #pre login while
     while True:
         data = client_socket.recv(1024)
         if not data:
@@ -224,6 +293,7 @@ def handle_client(client_socket, address, clients,db_manager):
             jData=json.dumps(data)
             client_socket.sendall(jData.encode('utf-8'))
     
+    #after login while(all general commands)
     while True:
         try:
             data = client_socket.recv(1024)
@@ -233,6 +303,7 @@ def handle_client(client_socket, address, clients,db_manager):
             command=messagestr.split(',')
             if len(command)==0:
                 continue
+            #message broadcasting
             if "all" == command[0]:
                 print("contains all")
                 if(len(command[1:])==0):
@@ -247,12 +318,14 @@ def handle_client(client_socket, address, clients,db_manager):
                 for c in clients:
                     c.send(jData.encode('utf-8'))
                 continue
+            #printing all users registered in the databse
             elif(command[0]=="print_users"):
                 #db_manager.PrintUsers()
                 Users=db_manager.GetUsers()
                 data={"message":"users are : ",
                       "status":"success",
                       "data":Users}
+            #create a new session
             elif(command[0]=="create_session"):
                 session=command[1:]
                 session.append(username)
@@ -265,11 +338,24 @@ def handle_client(client_socket, address, clients,db_manager):
                           "status":"success",
                           "data":None}
             
+            #print all registered sessions
             elif(command[0]=="print_sessions"):
                 sessions=db_manager.Get_Sessions()
                 data={"message":"sessions and owners are : ",
                       "status":"success",
                       "data":sessions}
+            #join an existing session
+            elif(command[0]=="join_session"):
+                session=command[1]
+                if(db_manager.Join_Session(username,session)==True):
+                    data={"message":"successfully joined session ",
+                        "status":"success",
+                        "data":None}
+                else:
+                    data={"message":"couldnt join session",
+                        "status":"fail",
+                        "data":None}
+
             else:
                 # Echo back the message
                 data={"message":messagestr,
