@@ -9,7 +9,7 @@ import sys, time
 from datetime import date
 import json
 
-def receive_messages(client_socket):
+def receive_messages(client_socket,event):
     while True:
         try:
             # Receive message from server
@@ -20,11 +20,13 @@ def receive_messages(client_socket):
                 if message["data"] != None:
                     for data in message["data"]:
                         print(data)
+            event.set()
+
         except Exception as e:
             print("Error receiving message:", e)
             break
 
-def send_user(client_socket,username = None,password = None):    
+def send_user(client_socket,event,username = None,password = None):    
     message ="login"
     time.sleep(2)
     while True:
@@ -35,6 +37,7 @@ def send_user(client_socket,username = None,password = None):
             command=message.split(" ")
             if(command[0] in ['',' ',""," "]):
                 print("wrong input")
+                message=None
                 continue
             if(command[0]=="sign_up"):
                 username=input("enter username : ")
@@ -54,8 +57,9 @@ def send_user(client_socket,username = None,password = None):
                 message=','.join(command)
             
             client_socket.send(message.encode('utf-8'))
-            time.sleep(1)
             message = None
+            event.wait()
+            event.clear()
         except Exception as e:
             print("Error sending message:", e)
             break
@@ -99,14 +103,17 @@ def main():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))
     ssl_client_socket =  context.wrap_socket(client_socket, server_hostname=host)
+    
+    #create event for thread synchronization
+    event=threading.Event()
 
     # Start a thread to receive messages from the server
-    receive_thread = threading.Thread(target=receive_messages, args=(ssl_client_socket,))
+    receive_thread = threading.Thread(target=receive_messages, args=(ssl_client_socket,event,))
     receive_thread.start()
     threads.append(receive_thread)
     
     # Start a thread to send messages to the server
-    send_thread = threading.Thread(target=send_user, args=(ssl_client_socket,args.username,args.password,))
+    send_thread = threading.Thread(target=send_user, args=(ssl_client_socket,event,args.username,args.password,))
     send_thread.start()
     threads.append(send_thread)
 
