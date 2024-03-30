@@ -16,8 +16,9 @@ class DatabaseManager:
         self.create_table()
 
     def create_table(self):
-        self.cursor.execute("DELETE FROM active_session_users")
-        self.cursor.execute("DROP TABLE IF EXISTS active_session_users")
+        debug=True
+        if(debug==False):
+            self.cursor.execute("DROP TABLE IF EXISTS active_session_users")
 
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -102,19 +103,13 @@ class DatabaseManager:
         return False
 
     def Is_User_in_sess(self,username,sessname):
-        cursor=self.cursor.execute("SELECT username,session FROM active_session_users")
+        cursor=self.cursor.execute("SELECT username FROM active_session_users WHERE username=(?) and session=(?)",(username,sessname))
         print(username)
         print(sessname)
-        for user in cursor:
-            print(user[0])
-            print(user[1])
-            if(username==user[0] and sessname==user[1]):
-                print('user already in this session')
-                return True
-            else:
-                print('user isnt in this session')
-                return False
-        return False
+        row=cursor.fetchone()
+        if(len(row)==0):
+            return False
+        return True
     def Can_Join(self,sessname):
         if(self.Does_Sess_Exist(sessname)==True):
             cursor=self.cursor.execute('SELECT session FROM active_session_users WHERE session= (?)',(sessname,))
