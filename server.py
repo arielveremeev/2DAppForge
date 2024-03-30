@@ -160,7 +160,7 @@ def handle_client(client_socket, address, clients,db_manager):
 
             else:
                 # Echo back the message
-                data={"message":messagestr,
+                data={"message":"[echo]"+ messagestr,
                       "status":"success",
                       "data":None}
                 
