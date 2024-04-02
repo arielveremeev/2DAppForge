@@ -11,7 +11,7 @@ class DatabaseManager:
         self.create_table()
 
     def create_table(self):
-        debug=True
+        debug=False
         if(debug==False):
             self.cursor.execute("DROP TABLE IF EXISTS active_session_users")
 
@@ -131,6 +131,14 @@ class DatabaseManager:
         self.cursor.execute('INSERT INTO active_session_users(username,session) VALUES (?,?)',(username,sessname))
         self.conn.commit()
 
+    def Remove_Active_User(self,username,sessname):
+        self.cursor.execute("DELETE FROM active_session_users WHERE username = (?) and session = (?)",(username,sessname,))
+        self.conn.commit()
+
+
+    def Session_users(self,sessname):
+        users=self.cursor.execute("SELECT username FROM active_session_users WHERE session = (?)",(sessname,))
+        return users
 
     def PrintUsers(self):
         #print all current registered users in the database

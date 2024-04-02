@@ -14,6 +14,7 @@ class cClient():
         self.address = address
         self.clients = clients
         self.db_manager = db_manager
+        self.session=None
         self.client_thread = threading.Thread(target=self.handle_client)
 
     def handle_client(self):
@@ -100,18 +101,25 @@ class cClient():
                 #message broadcasting
                 if "all" == command[0]:
                     print("contains all")
-                    if(len(command[1:])==0):
-                        data={'message':"be more precise",
-                            "status":"fail",
-                            "data":None}
+                    if(self.session!=None):
+                        if(len(command[1:])==0):
+                            data={'message':"be more precise",
+                                "status":"fail",
+                                "data":None}
+                        else:
+                            data={'message':' '.join(command[1:]),
+                                "status":"success",
+                                "data":None}
+                            jData=json.dumps(data)
+                            for c in self.clients:
+                                if(self.session == c.session and self.client_socket != c.client_socket):
+                                    c.client_socket.send(jData.encode('utf-8'))
+                            continue
+                        
                     else:
-                        data={'message':' '.join(command[1:]),
-                            "status":"success",
-                            "data":None}
-                    jData=json.dumps(data)
-                    for c in self.clients:
-                        c.client_socket.send(jData.encode('utf-8'))
-                    continue
+                        data={'message':"user isnt in session to broadcast",
+                                "status":"fail",
+                                "data":None}
                 #printing all users registered in the databse
                 elif(command[0]=="print_users"):
                     #db_manager.PrintUsers()
@@ -140,23 +148,46 @@ class cClient():
                         "data":sessions}
                 #join an existing session
                 elif(command[0]=="join_session"):
-                    session=command[1]
+                    sessname=command[1]
                     data={"message":"",
                         "status":"fail",
                         "data":None}
-                    if(self.db_manager.Does_Sess_Exist(session)==True):
-                        if(self.db_manager.Is_User_in_sess(username,session)==False):
-                            if(self.db_manager.Can_Join(session)==True):
-                                self.db_manager.Insert_Active_User(username,session)
-                                data["message"]="successfully joined session"
+                    if(self.session==None):
+                        if(self.db_manager.Does_Sess_Exist(sessname)==True):
+                            if(self.db_manager.Is_User_in_sess(username,sessname)==False):
+                                if(self.db_manager.Can_Join(sessname)==True):
+                                    self.db_manager.Insert_Active_User(username,sessname)
+                                    self.session=sessname
+                                    data["message"]="successfully joined session"
+                                    data["status"]="success"
+                                else:
+                                    data["message"]="cant join due to max participant amount"
+                            else:
+                                data["message"]="cant join user is already in this session"
+                        else:
+                            data["message"]="there isnt a session with this name"
+                        print(data["message"])
+                    else:
+                        data["message"]="user already in a session"
+
+                elif(command[0]=="exit_session"):
+                    sessname=command[1]
+                    data={"message":"",
+                          "status":"fail",
+                          "data":None}
+                    if(self.session==None):
+                        data["message"]="user isnt in a session"
+                    else:
+                        if(self.db_manager.Does_Sess_Exist(sessname)==True):
+                            if(self.db_manager.Is_User_in_sess(username,sessname)==True):
+                                self.db_manager.Remove_Active_User(username,sessname)
+                                self.session=None
+                                data["message"]="removed user from session"
                                 data["status"]="success"
                             else:
-                                data["message"]="cant join due to max participant amount"
+                                data["message"]="user isnt in this session"
                         else:
-                            data["message"]="cant join user is already in this session"
-                    else:
-                        data["message"]="there isnt a session with this name"
-                    print(data["message"])
+                            data["message"]="session doesnt exist"
 
 
                 else:
@@ -216,7 +247,6 @@ def main():
         ssl_client_socket = context.wrap_socket(client_socket, server_side=True)
         client=cClient(ssl_client_socket,address,clients,db_manager)
         clients.append(client)
-        
 
         client.start_client_thread()
 
