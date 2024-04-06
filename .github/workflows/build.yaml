@@ -23,7 +23,7 @@ jobs:
             - name: Build createsert.py
               run: pyinstaller --onefile createsert.py
             - name: Delete old Windows artifact
-              uses: geekyeggo/delete-artifact@v1
+              uses: geekyeggo/delete-artifact@v5
               with:
                 name: windows-executable
             - name: Upload All artifact
@@ -57,7 +57,7 @@ jobs:
             - name: Build Createsert
               run: pyinstaller --onefile createsert.py
             - name: Delete old Linux artifact
-              uses: geekyeggo/delete-artifact@v1
+              uses: geekyeggo/delete-artifact@v5
               with:
                 name: linux-executable
             - name: Upload Server artifact
@@ -85,7 +85,7 @@ jobs:
             - name: Build Createsert
               run: pyinstaller --onefile createsert.py
             - name: Delete old macos artifact
-              uses: geekyeggo/delete-artifact@v1
+              uses: geekyeggo/delete-artifact@v5
               with:
                 name: macos-executable
             - name: Upload createsert artifact
