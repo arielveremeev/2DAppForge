@@ -28,15 +28,15 @@ jobs:
             - name: Upload client.py artifact
               uses: actions/upload-artifact@v3
               with:
-                name: linux-client-executable
-                path: dist/client
+                name: windows-executable
+                path: dist/client.exe
             - name: Build createsert.py
               run: pyinstaller --onefile createsert.py
             - name: Upload createsert.py artifact
               uses: actions/upload-artifact@v3
               with:
-                name: linux-createsert-executable
-                path: dist/createsert
+                name: windows-executable
+                path: dist/createsert.exe
 
     build-linux:
         runs-on: ubuntu-latest
@@ -51,13 +51,27 @@ jobs:
                 python -m pip install --upgrade pip
                 pip install pyinstaller
                 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-            - name: Build
+            - name: Build Server
               run: pyinstaller --onefile server.py
-            - name: Upload artifact
+            - name: Upload Server artifact
               uses: actions/upload-artifact@v3
               with:
                 name: linux-executable
                 path: dist/server
+            - name: Build Client
+              run: pyinstaller --onefile client.py
+            - name: Upload Client artifact
+              uses: actions/upload-artifact@v3
+              with:
+                name: linux-executable
+                path: dist/client
+            - name: Build Createsert
+              run: pyinstaller --onefile createsert.py
+            - name: Upload createsert artifact
+              uses: actions/upload-artifact@v3
+              with:
+                name: linux-executable
+                path: dist/createsert        
 
     build-macos:
         runs-on: macos-latest
@@ -79,3 +93,18 @@ jobs:
               with:
                 name: macos-executable
                 path: dist/server
+            - name: Build Client
+              run: pyinstaller --onefile client.py
+            - name: Upload Client artifact
+              uses: actions/upload-artifact@v3
+              with:
+                name: macos-executable
+                path: dist/client
+            - name: Build Createsert
+              run: pyinstaller --onefile createsert.py
+            - name: Upload createsert artifact
+              uses: actions/upload-artifact@v3
+              with:
+                name: macos-executable
+                path: dist/createsert        
+  
