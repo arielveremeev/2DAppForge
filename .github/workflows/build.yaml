@@ -18,6 +18,10 @@ jobs:
                 if (Test-Path requirements.txt) { pip install -r requirements.txt }
             - name: Build
               run: pyinstaller --onefile server.py
+            - name: Delete old Windows artifact
+              uses: geekyeggo/delete-artifact@v1
+              with:
+                name: windows-executable
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
@@ -37,6 +41,11 @@ jobs:
               with:
                 name: windows-executable
                 path: dist/createsert.exe
+            - name: Upload test DB
+              uses: actions/upload-artifact@v4
+              with:
+                name: sqllite db
+                path: app_database.db
 
     build-linux:
         runs-on: ubuntu-latest
@@ -53,6 +62,10 @@ jobs:
                 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
             - name: Build Server
               run: pyinstaller --onefile server.py
+            - name: Delete old Linux artifact
+              uses: geekyeggo/delete-artifact@v1
+              with:
+                name: linux-executable
             - name: Upload Server artifact
               uses: actions/upload-artifact@v4
               with:
@@ -88,6 +101,10 @@ jobs:
                 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
             - name: Build
               run: pyinstaller --onefile server.py
+            - name: Delete old macos artifact
+              uses: geekyeggo/delete-artifact@v1
+              with:
+                name: macos-executable
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
