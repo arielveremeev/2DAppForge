@@ -52,6 +52,10 @@ jobs:
                 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
             - name: Build Server
               run: pyinstaller --onefile server.py
+            - name: Build Client
+              run: pyinstaller --onefile client.py
+            - name: Build Createsert
+              run: pyinstaller --onefile createsert.py
             - name: Delete old Linux artifact
               uses: geekyeggo/delete-artifact@v1
               with:
@@ -59,23 +63,8 @@ jobs:
             - name: Upload Server artifact
               uses: actions/upload-artifact@v4
               with:
-                name: linux-executable
-                path: dist/server
-            - name: Build Client
-              run: pyinstaller --onefile client.py
-            - name: Upload Client artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: linux-executable
-                path: dist/client
-            - name: Build Createsert
-              run: pyinstaller --onefile createsert.py
-            - name: Upload createsert artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: linux-executable
-                path: dist/createsert        
-
+                name: linux-executable-${{ github.run_number }}
+                path: dist/*            
     build-macos:
         runs-on: macos-latest
         steps:
@@ -91,27 +80,17 @@ jobs:
                 if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
             - name: Build
               run: pyinstaller --onefile server.py
+            - name: Build Client
+              run: pyinstaller --onefile client.py            
+            - name: Build Createsert
+              run: pyinstaller --onefile createsert.py
             - name: Delete old macos artifact
               uses: geekyeggo/delete-artifact@v1
               with:
                 name: macos-executable
-            - name: Upload artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: macos-executable
-                path: dist/server
-            - name: Build Client
-              run: pyinstaller --onefile client.py
-            - name: Upload Client artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: macos-executable
-                path: dist/client
-            - name: Build Createsert
-              run: pyinstaller --onefile createsert.py
             - name: Upload createsert artifact
               uses: actions/upload-artifact@v4
               with:
-                name: macos-executable
-                path: dist/createsert        
+                name: macos-executable-${{ github.run_number }}
+                path: dist/*        
   
