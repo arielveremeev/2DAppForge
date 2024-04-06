@@ -50,7 +50,7 @@ class cClient():
                             "status":"success",
                             "data":None}
                     jData=json.dumps(data)
-                    self.ssl_client_socket.sendall(jData.encode('utf-8'))
+                    self.client_socket.sendall(jData.encode('utf-8'))
         
                 else:
                     if(len(user[1:])!=2):
