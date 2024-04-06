@@ -8,7 +8,7 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             - name: Set up Python 3.10
-              uses: actions/setup-python@v4
+              uses: actions/setup-python@v5
               with:
                 python-version: "3.10"
             - name: Install dependencies
@@ -16,31 +16,21 @@ jobs:
                 python -m pip install --upgrade pip
                 pip install pyinstaller
                 if (Test-Path requirements.txt) { pip install -r requirements.txt }
-            - name: Build
+            - name: Build server
               run: pyinstaller --onefile server.py
+            - name: Build client.py
+              run: pyinstaller --onefile client.py
+            - name: Build createsert.py
+              run: pyinstaller --onefile createsert.py
             - name: Delete old Windows artifact
               uses: geekyeggo/delete-artifact@v1
               with:
                 name: windows-executable
-            - name: Upload artifact
+            - name: Upload All artifact
               uses: actions/upload-artifact@v4
               with:
                 name: windows-executable-${{ github.run_number }}
-                path: dist/server.exe
-            - name: Build client.py
-              run: pyinstaller --onefile client.py
-            - name: Upload client.py artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: windows-executable-${{ github.run_number }}
-                path: dist/client.exe
-            - name: Build createsert.py
-              run: pyinstaller --onefile createsert.py
-            - name: Upload createsert.py artifact
-              uses: actions/upload-artifact@v4
-              with:
-                name: windows-executable-${{ github.run_number }}
-                path: dist/createsert.exe
+                path: dist/*.exe
             - name: Upload test DB
               uses: actions/upload-artifact@v4
               with:
