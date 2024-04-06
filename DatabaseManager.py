@@ -14,6 +14,7 @@ class DatabaseManager:
         debug=False
         if(debug==False):
             self.cursor.execute("DROP TABLE IF EXISTS active_session_users")
+            self.cursor.execute("DROP TABLE IF EXISTS sessions")
 
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (

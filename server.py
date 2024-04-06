@@ -5,10 +5,48 @@ import ssl
 import ipaddress
 from datetime import date
 import json
+import os
 from DatabaseManager import DatabaseManager 
+from shapes import Shape
+from shapes import CreateShapes
+
+
+class cSession():
+    def __init__(self,name):
+        self.name = name
+        self.shapes=None
+        self.filename=None
+
+    def FileOpener(self,path):
+        file=open(path,'r')
+        count=0
+        lines=[]
+        while True:
+            count+=1
+            line = file.readline()
+            line=line.rstrip()
+            
+            if not line:
+                break
+            lines.append(line)
+            print("Line{}: {}".format(count, lines[count-1].strip()))
+        file.close()
+        return lines
+    
+    def LoadFile(self,path) -> bool:
+        if os.path.exists(path):
+            lines=self.FileOpener(path)
+            parts=path.split("\\")
+            self.filename=parts[len(parts)-1]
+            self.shapes=CreateShapes(lines)
+            return True
+        else:
+            return False
+
 
 
 class cClient():
+    Session ={}
     def __init__(self, client_socket, address, clients, db_manager):
         self.client_socket = client_socket
         self.address = address
@@ -16,6 +54,8 @@ class cClient():
         self.db_manager = db_manager
         self.session=None
         self.client_thread = threading.Thread(target=self.handle_client)
+
+
 
     def handle_client(self):
         print(f"accepted connection from {self.address}")
@@ -131,11 +171,13 @@ class cClient():
                 elif(command[0]=="create_session"):
                     session=command[1:]
                     session.append(username)
+                    sessname=session[0]
                     if(self.db_manager.Create_Session(session)==False):
                         data={"message":"session not created, session with this name already exists",
                             "status":"fail",
                             "data":None}
                     else:
+                        Session={sessname:cSession(sessname)}
                         data={"message":"new session created",
                             "status":"success",
                             "data":None}
@@ -188,6 +230,21 @@ class cClient():
                                 data["message"]="user isnt in this session"
                         else:
                             data["message"]="session doesnt exist"
+                elif(command[0]=="load_file"):
+                    path=command[1]
+                    if(self.session==None and self.session not in Session.keys()):
+                        data={"message":"create session before loading file",
+                            "status":"fail",
+                            "data":None}
+                    else:
+                        if Session[self.session].LoadFile(path):
+                            data={"message":"file loaded",
+                                "status":"success",
+                                "data":None}
+                        else:
+                            data={"message":"file doesnt exist",
+                                "status":"fail",
+                                "data":None}
 
 
                 else:
