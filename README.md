@@ -17,6 +17,8 @@ source ./tet1/bin/activate
 # required external python libraries:
 bcrypt
 pyopenssl
+pyinstaller
+
 pip3 install -r requirements.txt
 
 # required internal python libraries:

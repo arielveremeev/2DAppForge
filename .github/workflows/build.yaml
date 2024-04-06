@@ -1,0 +1,64 @@
+name: Build
+
+on: [push]
+
+jobs:
+    build-windows:
+        runs-on: windows-latest
+        steps:
+        - uses: actions/checkout@v2
+        - name: Set up Python
+            uses: actions/setup-python@v2
+            with:
+                python-version: '3.10.2'
+        - name: Install dependencies
+            run: |
+                python -m pip install --upgrade pip
+                pip install pyinstaller
+        - name: Build
+            run: pyinstaller --onefile server.py
+        - name: Upload artifact
+            uses: actions/upload-artifact@v2
+            with:
+                name: windows-executable
+                path: dist/server.exe
+
+    build-linux:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v2
+        - name: Set up Python
+            uses: actions/setup-python@v2
+            with:
+                python-version: '3.10.2'
+        - name: Install dependencies
+            run: |
+                python -m pip install --upgrade pip
+                pip install pyinstaller
+        - name: Build
+            run: pyinstaller --onefile server.py
+        - name: Upload artifact
+            uses: actions/upload-artifact@v2
+            with:
+                name: linux-executable
+                path: dist/server
+
+    build-macos:
+        runs-on: macos-latest
+        steps:
+        - uses: actions/checkout@v2
+        - name: Set up Python
+            uses: actions/setup-python@v2
+            with:
+                python-version: '3.10.2'
+        - name: Install dependencies
+            run: |
+                python -m pip install --upgrade pip
+                pip install pyinstaller
+        - name: Build
+            run: pyinstaller --onefile server.py
+        - name: Upload artifact
+            uses: actions/upload-artifact@v2
+            with:
+                name: macos-executable
+                path: dist/server

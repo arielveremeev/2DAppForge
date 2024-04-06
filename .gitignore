@@ -1,4 +1,7 @@
 .*
+*.spec
+build
+dist
 server.crt
 server.key
 *.pyc
