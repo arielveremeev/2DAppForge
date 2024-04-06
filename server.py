@@ -47,6 +47,7 @@ class cSession():
 
 class cClient():
     Session ={}
+    workingFolder = os.getcwd()
     def __init__(self, client_socket, address, clients, db_manager):
         self.client_socket = client_socket
         self.address = address
@@ -177,7 +178,7 @@ class cClient():
                             "status":"fail",
                             "data":None}
                     else:
-                        Session={sessname:cSession(sessname)}
+                        self.Session[sessname] = cSession(sessname)
                         data={"message":"new session created",
                             "status":"success",
                             "data":None}
@@ -231,13 +232,14 @@ class cClient():
                         else:
                             data["message"]="session doesnt exist"
                 elif(command[0]=="load_file"):
-                    path=command[1]
-                    if(self.session==None and self.session not in Session.keys()):
+                    ufileName=command[1]
+                    if(self.session==None and self.session not in self.Session.keys()):
                         data={"message":"create session before loading file",
                             "status":"fail",
                             "data":None}
                     else:
-                        if Session[self.session].LoadFile(path):
+                        ffileName = os.path.abspath(os.path.join(self.workingFolder, "assests", ufileName))
+                        if self.Session[self.session].LoadFile(ffileName):
                             data={"message":"file loaded",
                                 "status":"success",
                                 "data":None}
