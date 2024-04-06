@@ -25,21 +25,21 @@ jobs:
             - name: Upload artifact
               uses: actions/upload-artifact@v4
               with:
-                name: windows-executable
+                name: windows-executable-${{ github.run_number }}
                 path: dist/server.exe
             - name: Build client.py
               run: pyinstaller --onefile client.py
             - name: Upload client.py artifact
               uses: actions/upload-artifact@v4
               with:
-                name: windows-executable
+                name: windows-executable-${{ github.run_number }}
                 path: dist/client.exe
             - name: Build createsert.py
               run: pyinstaller --onefile createsert.py
             - name: Upload createsert.py artifact
               uses: actions/upload-artifact@v4
               with:
-                name: windows-executable
+                name: windows-executable-${{ github.run_number }}
                 path: dist/createsert.exe
             - name: Upload test DB
               uses: actions/upload-artifact@v4
