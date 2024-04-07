@@ -23,6 +23,18 @@ class Shape():
         for point in self.points:
             print(point)
 
+    def PointString(self):
+        string=''
+        for point in self.points:
+            cord=point.GetX() + ";" + point.GetY() + ";"
+            string+=cord
+        return string
+
+    def GetString(self):
+        pointS=self.PointString()
+        pointS=pointS[:-1]
+        string=self.name + " " + self.vertexes + " " + pointS
+        return string
             
 
 class Point():
@@ -32,7 +44,11 @@ class Point():
 
     def __str__(self) -> str:
         return f"[{str(self.x)},{str(self.y)}]"
-
+    
+    def GetX(self):
+        return str(self.x)
+    def GetY(self):
+        return str(self.y)
 
 
 class Polygon(Shape):
@@ -49,6 +65,12 @@ class Circle(Shape):
     def SetRadius(self,line):
         para=line.split(" ")
         return para[3]
+    def GetString(self):
+        pointS=self.PointString()
+        pointS=pointS[:-1]
+        string=self.name + " " + self.vertexes + " " + pointS + " " +str(self.radius)
+        return string
+    
 
 
 def CreateShapes(lines):
@@ -86,6 +108,25 @@ def main():
 
 
     print(shapes)
+
+    print('\n')
+
+    newL=''
+
+    count=0
+    for shape in shapes:
+        newL+=shape.GetString()
+        if(count<len(shapes)-2):
+            newL+= "\n"
+
+    print(newL)
+
+    newF=open("C:\Projects\\2DAppForge\\assests\shapes2.avsf","w")
+    newF.write(newL)
+    newF.close()
+
+
+
 
 if __name__ == "__main__":
     main()
