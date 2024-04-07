@@ -9,6 +9,7 @@ import os
 from DatabaseManager import DatabaseManager 
 from shapes import Shape
 from shapes import CreateShapes
+from shapes import CreateDict
 
 
 class cSession():
@@ -239,14 +240,25 @@ class cClient():
                             "data":None}
                     else:
                         ffileName = os.path.abspath(os.path.join(self.workingFolder, "assests", ufileName))
-                        if self.Session[self.session].LoadFile(ffileName):
+                        if self.Session[self.session].LoadFile(ffileName):                            
                             data={"message":"file loaded",
                                 "status":"success",
                                 "data":None}
                         else:
-                            data={"message":"file doesnt exist",
-                                "status":"fail",
-                                "data":None}
+                            data={"message":"Error",
+                                  "status":"fail",
+                                  "data":None}
+                            
+                elif(command[0]=="print_shapes"):
+                    if(self.session==None and self.session not in self.Session.keys()):
+                        data={"message":"cannot print shapes if not in session",
+                            "status":"fail",
+                            "data":None}  
+                    else:
+                        shapeD=CreateDict(self.Session[self.session].shapes)                        
+                        data={"message":"shapes are",
+                            "status":"success",
+                            "data":shapeD}
 
 
                 else:

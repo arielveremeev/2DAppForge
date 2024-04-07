@@ -84,6 +84,14 @@ def CreateShapes(lines):
         shapes.append(shape)
     return shapes
 
+def CreateDict(shapes):
+    count=1
+    shapeD={}
+    for shape in shapes:
+        shapeD.update({str(count):shape.GetString()})
+        count+=1
+    return shapeD
+
 def main():
 
     file=open('V:\Leva.Downloads\shapes.txt','r')
@@ -125,7 +133,8 @@ def main():
     newF.write(newL)
     newF.close()
 
-
+    shapeD= CreateDict(shapes)
+    print(shapeD)
 
 
 if __name__ == "__main__":

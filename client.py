@@ -18,8 +18,13 @@ def receive_messages(client_socket,event):
                 message=json.loads(jMessage)
                 print(message["message"])
                 if message["data"] != None:
-                    for data in message["data"]:
-                        print(data)
+                    if(type(message["data"]) is dict):
+                        for index in message["data"]:
+                            data=message["data"][index]
+                            print(f"[{index}]:{data}")
+                    else:
+                        for data in message["data"]:
+                            print(data)
             event.set()
 
         except Exception as e:
