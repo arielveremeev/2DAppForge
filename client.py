@@ -1,15 +1,11 @@
-import sqlite3
-import bcrypt
 import argparse
 import socket
 import threading
 import ssl
 import ipaddress
-import sys, time
-from datetime import date
 import json
 
-def receive_messages(client_socket,event):
+def receive_messages(client_socket,event) -> None:
     while True:
         try:
             # Receive message from server
@@ -17,7 +13,7 @@ def receive_messages(client_socket,event):
             if jMessage:
                 message=json.loads(jMessage)
                 print(message["message"])
-                if message["data"] != None:
+                if message["data"] is not None:
                     if(type(message["data"]) is dict):
                         for index in message["data"]:
                             data=message["data"][index]
