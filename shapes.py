@@ -1,3 +1,5 @@
+import json
+
 class Shape():
     def __init__(self,line):
         parameters=line.split(" ")
@@ -74,23 +76,24 @@ class Circle(Shape):
 
 
 def CreateShapes(lines):
-    shapes=[]
+    shapes={}
+    shapeid=0
     for line in lines:
+        shapeid+=1
         if("circle" in line):
-            shape=Circle(line)
+            shapes.update({shapeid:Circle(line)})
         else:
-            shape=Polygon(line)
-        print(shape)
-        shapes.append(shape)
+            shapes.update({shapeid:Polygon(line)})
+        print(shapes[shapeid])
     return shapes
 
-def CreateDict(shapes):
-    count=1
-    shapeD={}
-    for shape in shapes:
-        shapeD.update({str(count):shape.GetString()})
-        count+=1
-    return shapeD
+
+class ShapeJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Shape):
+            return obj.GetString()
+        return json.JSONEncoder.default(self, obj)
+
 
 def main():
 
@@ -113,28 +116,13 @@ def main():
     print("\n")
 
     shapes=CreateShapes(lines)
-
-
     print(shapes)
-
+    print(json.dumps(shapes,cls=ShapeJsonEncoder))
     print('\n')
 
-    newL=''
+ 
 
-    count=0
-    for shape in shapes:
-        newL+=shape.GetString()
-        if(count<len(shapes)-2):
-            newL+= "\n"
 
-    print(newL)
-
-    newF=open("C:\Projects\\2DAppForge\\assests\shapes2.avsf","w")
-    newF.write(newL)
-    newF.close()
-
-    shapeD= CreateDict(shapes)
-    print(shapeD)
 
 
 if __name__ == "__main__":

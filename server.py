@@ -9,8 +9,7 @@ import os
 from DatabaseManager import DatabaseManager 
 from shapes import Shape
 from shapes import CreateShapes
-from shapes import CreateDict
-
+from shapes import ShapeJsonEncoder
 
 class cSession():
     def __init__(self,name):
@@ -215,7 +214,7 @@ class cClient():
                         data["message"]="user already in a session"
 
                 elif(command[0]=="exit_session"):
-                    sessname=command[1]
+                    sessname=self.session
                     data={"message":"",
                           "status":"fail",
                           "data":None}
@@ -239,15 +238,21 @@ class cClient():
                             "status":"fail",
                             "data":None}
                     else:
-                        ffileName = os.path.abspath(os.path.join(self.workingFolder, "assests", ufileName))
-                        if self.Session[self.session].LoadFile(ffileName):                            
-                            data={"message":"file loaded",
-                                "status":"success",
+                        if(self.Session[self.session].shapes is not None):
+                            data={"message":"file is already loaded",
+                                "status":"fail",
                                 "data":None}
                         else:
-                            data={"message":"Error",
-                                  "status":"fail",
-                                  "data":None}
+                            ffileName = os.path.abspath(os.path.join(self.workingFolder, "assests", ufileName))
+                            if self.Session[self.session].LoadFile(ffileName):                            
+                                data={"message":"file loaded",
+                                    "status":"success",
+                                    "data":None}
+
+                            else:
+                                data={"message":"Error",
+                                    "status":"fail",
+                                    "data":None}
                             
                 elif(command[0]=="print_shapes"):
                     if(self.session==None and self.session not in self.Session.keys()):
@@ -255,7 +260,7 @@ class cClient():
                             "status":"fail",
                             "data":None}  
                     else:
-                        shapeD=CreateDict(self.Session[self.session].shapes)                        
+                        shapeD=self.Session[self.session].shapes                     
                         data={"message":"shapes are",
                             "status":"success",
                             "data":shapeD}
@@ -268,7 +273,7 @@ class cClient():
                         "data":None}
                     
 
-                jData=json.dumps(data)
+                jData=json.dumps(data,cls=ShapeJsonEncoder)
                 self.client_socket.sendall(jData.encode('utf-8'))
             
             except Exception as e:
@@ -276,6 +281,7 @@ class cClient():
                 break
 
         print(f"Connection from {self.address} closed")
+        self.db_manager.Remove_Active_User(username,self.session)
         self.client_socket.close()
 
     def start_client_thread(self):
