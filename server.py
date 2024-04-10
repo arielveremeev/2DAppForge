@@ -266,6 +266,22 @@ class cClient():
                             "data":shapeD}
 
 
+                elif(command[0]=="delete_shape"):
+                    if(command[1] is not None):
+                        if(command[1] in self.Session[self.session].shapes.keys()):
+                            del self.Session[self.session].shapes[command[1]]  
+                            data={"message":"shape deleted",
+                                  "status":"success",
+                                  "data":None}
+                        else:
+                            data={"message":"no shape with such id",
+                                  "status":"fail",
+                                  "data":None}
+                    else:
+                        data={"message":"please provide shapeiD",
+                              "status":"fail",
+                              "data":None}
+
                 else:
                     # Echo back the message
                     data={"message":"[echo]"+ messagestr,
