@@ -87,6 +87,15 @@ def CreateShapes(lines):
         print(shapes[shapeid])
     return shapes
 
+def CreateShape(line)->Shape:
+    shape = None
+    if("circle" in line):
+        shape = Circle(line)
+    else:
+        shape = Polygon(line)
+    print(shape)
+    return shape
+
 
 class ShapeJsonEncoder(json.JSONEncoder):
     def default(self, obj):
