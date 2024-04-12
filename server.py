@@ -8,13 +8,14 @@ import json
 import os
 from DatabaseManager import DatabaseManager 
 from shapes import Shape
-from shapes import CreateShapes
+from shapes import CreateShape
 from shapes import ShapeJsonEncoder
 
 class cSession():
     def __init__(self,name):
         self.name = name
-        self.shapes=None
+        self.shapes={}
+        self.shapeID=0
         self.filename=None
 
     def FileOpener(self,path):
@@ -38,7 +39,9 @@ class cSession():
             lines=self.FileOpener(path)
             parts=path.split("\\")
             self.filename=parts[len(parts)-1]
-            self.shapes=CreateShapes(lines)
+            for line in lines:
+                self.shapeID+=1
+                self.shapes.update({self.shapeID:CreateShape(line)})
             return True
         else:
             return False
@@ -238,7 +241,7 @@ class cClient():
                             "status":"fail",
                             "data":None}
                     else:
-                        if(self.Session[self.session].shapes is not None):
+                        if(len(self.Session[self.session].shapes) != 0):
                             data={"message":"file is already loaded",
                                 "status":"fail",
                                 "data":None}
