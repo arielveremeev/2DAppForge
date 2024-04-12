@@ -37,6 +37,14 @@ class Shape():
         pointS=pointS[:-1]
         string=self.name + " " + self.vertexes + " " + pointS
         return string
+    def MoveShape(self,Mx : float,My : float):
+        for point in self.points:
+            point.x+=Mx
+            point.y+=My
+    def ScaleShape(self,Sx : float,Sy : float):
+        for point in self.points:
+            point.x*=Sx
+            point.y*=Sy
             
 
 class Point():
@@ -51,6 +59,7 @@ class Point():
         return str(self.x)
     def GetY(self):
         return str(self.y)
+    
 
 
 class Polygon(Shape):
@@ -64,14 +73,16 @@ class Circle(Shape):
     def __str__(self) -> str:
         return super(Circle,self).__str__() + "radius = " + str(self.radius)
 
-    def SetRadius(self,line):
+    def SetRadius(self,line) -> float:
         para=line.split(" ")
-        return para[3]
+        return float(para[3])
     def GetString(self):
         pointS=self.PointString()
         pointS=pointS[:-1]
         string=self.name + " " + self.vertexes + " " + pointS + " " +str(self.radius)
         return string
+    def ScaleShape(self,Sx : float,Sy : float):
+        self.radius*=Sx
     
 
 

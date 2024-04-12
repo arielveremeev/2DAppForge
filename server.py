@@ -68,6 +68,19 @@ class cSession():
         self.filename=None
         return True
 
+    def MoveShape(self,ssid,Mx:str,My:str) -> bool:
+        SiID=int(ssid)
+        if(self.shapes[SiID]is not None):
+            self.shapes[SiID].MoveShape(float(Mx),float(My))
+            return True
+        return False
+    def ScaleShape(self,ssid,Sx:str,Sy:str) -> bool:
+        SiID=int(ssid)
+        if(self.shapes[SiID]is not None):
+            self.shapes[SiID].ScaleShape(float(Sx),float(Sy))
+            return True
+        return False
+
 
 class cClient():
     Session ={}
@@ -341,6 +354,46 @@ class cClient():
                             data={"message":"not added",
                                 "status":"fail",
                                 "data":None}
+                elif(command[0]=="move_shape"):
+                    if(self.session==None and self.session not in self.Session.keys()):
+                        data={"message":"cannot move shapes if not in session",
+                            "status":"fail",
+                            "data":None}  
+                    else:
+                        if(len(command[1:]) == 3):
+                            if(self.Session[self.session].MoveShape(command[1],command[2],command[3])):
+                                data={"message":"moved shape",
+                                      "status":"success",
+                                      "data":None}  
+                            else:
+                                data={"message":"error",
+                                      "status":"fail",
+                                      "data":None}
+                        else:
+                            data={"message":"missing arguments",
+                                      "status":"fail",
+                                      "data":None}
+                elif(command[0]=="scale_shape"):
+                    if(self.session==None and self.session not in self.Session.keys()):
+                        data={"message":"cannot scale shapes if not in session",
+                            "status":"fail",
+                            "data":None}  
+                    else:
+                        if(len(command[1:]) == 3):
+                            if(self.Session[self.session].ScaleShape(command[1],command[2],command[3])):
+                                data={"message":"scale shape",
+                                      "status":"success",
+                                      "data":None}  
+                            else:
+                                data={"message":"error",
+                                      "status":"fail",
+                                      "data":None}
+                        else:
+                            data={"message":"missing arguments",
+                                      "status":"fail",
+                                      "data":None}    
+                              
+
 
                 else:
                     # Echo back the message
