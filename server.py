@@ -268,8 +268,9 @@ class cClient():
 
                 elif(command[0]=="delete_shape"):
                     if(command[1] is not None):
-                        if(command[1] in self.Session[self.session].shapes.keys()):
-                            del self.Session[self.session].shapes[command[1]]  
+                        SiD=int(command[1])
+                        if(SiD in self.Session[self.session].shapes.keys()): 
+                            del self.Session[self.session].shapes[SiD]  
                             data={"message":"shape deleted",
                                   "status":"success",
                                   "data":None}
