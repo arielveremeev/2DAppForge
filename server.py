@@ -45,6 +45,12 @@ class cSession():
             return True
         else:
             return False
+    def DeleteShape(self,ssid) -> bool:
+        SiID=int(ssid)
+        if(SiID in self.shapes.keys()): 
+            del self.shapes[SiID]
+            return True
+        return False
 
 
 
@@ -271,9 +277,7 @@ class cClient():
 
                 elif(command[0]=="delete_shape"):
                     if(command[1] is not None):
-                        SiD=int(command[1])
-                        if(SiD in self.Session[self.session].shapes.keys()): 
-                            del self.Session[self.session].shapes[SiD]  
+                        if(self.Session[self.session].DeleteShape(command[1]) is True):
                             data={"message":"shape deleted",
                                   "status":"success",
                                   "data":None}
@@ -285,7 +289,7 @@ class cClient():
                         data={"message":"please provide shapeiD",
                               "status":"fail",
                               "data":None}
-
+                                             
                 else:
                     # Echo back the message
                     data={"message":"[echo]"+ messagestr,
