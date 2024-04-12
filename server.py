@@ -58,6 +58,15 @@ class cSession():
             self.shapes.update({self.shapeID:CreateShape(line)})
             return True
         return False
+    def SaveFile(self,path):
+        file=open(path,'w')
+        for shape in self.shapes.values():
+            file.write(shape.GetString() + '\n')
+        file.close()
+        del self.shapes
+        self.shapes={}
+        self.filename=None
+        return True
 
 
 class cClient():
@@ -268,6 +277,22 @@ class cClient():
                                 data={"message":"Error",
                                     "status":"fail",
                                     "data":None}
+                elif(command[0]=="save_file"):
+                    ufileName=command[1]
+                    if(self.session==None and self.session not in self.Session.keys()):
+                        data={"message":"create session before saving file",
+                            "status":"fail",
+                            "data":None}
+                    else:
+                        ffileName = os.path.abspath(os.path.join(self.workingFolder, "assests", ufileName))
+                        if self.Session[self.session].SaveFile(ffileName):                            
+                            data={"message":"file saved",
+                                "status":"success",
+                                "data":None}
+                        else:
+                            data={"message":"Error",
+                                "status":"fail",
+                                "data":None}
                             
                 elif(command[0]=="print_shapes"):
                     if(self.session==None and self.session not in self.Session.keys()):
