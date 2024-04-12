@@ -51,7 +51,13 @@ class cSession():
             del self.shapes[SiID]
             return True
         return False
-
+    
+    def AddShape(self,line) ->bool:
+        if(line is not None and type(line) is str):
+            self.shapeID+=1
+            self.shapes.update({self.shapeID:CreateShape(line)})
+            return True
+        return False
 
 
 class cClient():
@@ -276,20 +282,41 @@ class cClient():
 
 
                 elif(command[0]=="delete_shape"):
-                    if(command[1] is not None):
-                        if(self.Session[self.session].DeleteShape(command[1]) is True):
-                            data={"message":"shape deleted",
-                                  "status":"success",
-                                  "data":None}
-                        else:
-                            data={"message":"no shape with such id",
-                                  "status":"fail",
-                                  "data":None}
+                    if(self.session==None and self.session not in self.Session.keys()):
+                        data={"message":"cannot delete shapes if not in session",
+                            "status":"fail",
+                            "data":None}  
                     else:
-                        data={"message":"please provide shapeiD",
-                              "status":"fail",
-                              "data":None}
+                        if(command[1] is not None):
+                            if(self.Session[self.session].DeleteShape(command[1]) is True):
+                                data={"message":"shape deleted",
+                                    "status":"success",
+                                    "data":None}
+                            else:
+                                data={"message":"no shape with such id",
+                                    "status":"fail",
+                                    "data":None}
+                        else:
+                            data={"message":"please provide shapeiD",
+                                "status":"fail",
+                                "data":None}
                                              
+                elif(command[0] == "add_shape"):
+                    if(self.session==None and self.session not in self.Session.keys()):
+                        data={"message":"cannot add shapes if not in session",
+                            "status":"fail",
+                            "data":None}  
+                    else:
+                        line=' '.join(command[1:])
+                        if(self.Session[self.session].AddShape(line) is True):
+                            data={"message":"shape added",
+                                "status":"success",
+                                "data":None}
+                        else:
+                            data={"message":"not added",
+                                "status":"fail",
+                                "data":None}
+
                 else:
                     # Echo back the message
                     data={"message":"[echo]"+ messagestr,
