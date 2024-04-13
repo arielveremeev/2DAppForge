@@ -45,19 +45,22 @@ class cSession():
             return True
         else:
             return False
-    def DeleteShape(self,ssid) -> bool:
+    def DeleteShape(self,ssid) -> dict:
         SiID=int(ssid)
         if(SiID in self.shapes.keys()): 
+            deletedShape={-SiID:self.shapes[SiID]}
             del self.shapes[SiID]
-            return True
-        return False
+            return deletedShape
+        return None
     
-    def AddShape(self,line) ->bool:
+    def AddShape(self,line) ->dict:
         if(line is not None and type(line) is str):
             self.shapeID+=1
-            self.shapes.update({self.shapeID:CreateShape(line)})
-            return True
-        return False
+            addedShape = {self.shapeID:CreateShape(line)}
+            self.shapes.update(addedShape)
+            return addedShape
+        return None
+    
     def SaveFile(self,path):
         file=open(path,'w')
         for shape in self.shapes.values():
@@ -68,18 +71,18 @@ class cSession():
         self.filename=None
         return True
 
-    def MoveShape(self,ssid,Mx:str,My:str) -> bool:
+    def MoveShape(self,ssid,Mx:str,My:str) -> dict:
         SiID=int(ssid)
         if(self.shapes[SiID]is not None):
             self.shapes[SiID].MoveShape(float(Mx),float(My))
-            return True
-        return False
-    def ScaleShape(self,ssid,Sx:str,Sy:str) -> bool:
+            return {SiID:self.shapes[SiID]}
+        return None
+    def ScaleShape(self,ssid,Sx:str,Sy:str) -> dict:
         SiID=int(ssid)
         if(self.shapes[SiID]is not None):
             self.shapes[SiID].ScaleShape(float(Sx),float(Sy))
-            return True
-        return False
+            return {SiID:self.shapes[SiID]}
+        return None
 
 
 class cClient():
@@ -92,6 +95,16 @@ class cClient():
         self.db_manager = db_manager
         self.session=None
         self.client_thread = threading.Thread(target=self.handle_client)
+    
+    def Broadcast(self,msg2send,data2send,send2self:bool = False):
+        data={"message":msg2send,
+              "status":"success",
+              "data":data2send}
+        jData=json.dumps(data,cls=ShapeJsonEncoder)
+        for c in self.clients:
+            if(self.session == c.session and (self.client_socket != c.client_socket or send2self==True)):
+                c.client_socket.send(jData.encode('utf-8'))
+        
 
 
 
@@ -185,13 +198,7 @@ class cClient():
                                 "status":"fail",
                                 "data":None}
                         else:
-                            data={'message':' '.join(command[1:]),
-                                "status":"success",
-                                "data":None}
-                            jData=json.dumps(data)
-                            for c in self.clients:
-                                if(self.session == c.session and self.client_socket != c.client_socket):
-                                    c.client_socket.send(jData.encode('utf-8'))
+                            self.Broadcast(' '.join(command[1:]),None)
                             continue
                         
                     else:
@@ -240,6 +247,7 @@ class cClient():
                                     self.session=sessname
                                     data["message"]="successfully joined session"
                                     data["status"]="success"
+                                    data["data"]=self.Session[self.session].shapes
                                 else:
                                     data["message"]="cant join due to max participant amount"
                             else:
@@ -285,27 +293,35 @@ class cClient():
                                 data={"message":"file loaded",
                                     "status":"success",
                                     "data":None}
+                                self.Broadcast(None,self.Session[self.session].shapes,True)
 
                             else:
                                 data={"message":"Error",
                                     "status":"fail",
                                     "data":None}
                 elif(command[0]=="save_file"):
-                    ufileName=command[1]
-                    if(self.session==None and self.session not in self.Session.keys()):
-                        data={"message":"create session before saving file",
-                            "status":"fail",
-                            "data":None}
-                    else:
-                        ffileName = os.path.abspath(os.path.join(self.workingFolder, "assests", ufileName))
-                        if self.Session[self.session].SaveFile(ffileName):                            
-                            data={"message":"file saved",
-                                "status":"success",
-                                "data":None}
-                        else:
-                            data={"message":"Error",
+                    if(len(command[1:]) == 1):
+                        ufileName=command[1]
+                        if(self.session==None and self.session not in self.Session.keys()):
+                            data={"message":"create session before saving file",
                                 "status":"fail",
                                 "data":None}
+                        else:
+                            ffileName = os.path.abspath(os.path.join(self.workingFolder, "assests", ufileName))
+                            if self.Session[self.session].SaveFile(ffileName):                            
+                                data={"message":"file saved",
+                                    "status":"success",
+                                    "data":None}
+                                self.Broadcast(None,self.Session[self.session].shapes,True)
+                            else:
+                                data={"message":"Error",
+                                    "status":"fail",
+                                    "data":None}
+                    else:
+                        data={"message":"file name not provided",
+                              "status":"fail",
+                              "data":None}
+
                             
                 elif(command[0]=="print_shapes"):
                     if(self.session==None and self.session not in self.Session.keys()):
@@ -326,10 +342,12 @@ class cClient():
                             "data":None}  
                     else:
                         if(command[1] is not None):
-                            if(self.Session[self.session].DeleteShape(command[1]) is True):
+                            deletedShape=self.Session[self.session].DeleteShape(command[1])
+                            if(deletedShape is not None):
                                 data={"message":"shape deleted",
                                     "status":"success",
                                     "data":None}
+                                self.Broadcast(None,deletedShape,True)
                             else:
                                 data={"message":"no shape with such id",
                                     "status":"fail",
@@ -346,10 +364,12 @@ class cClient():
                             "data":None}  
                     else:
                         line=' '.join(command[1:])
-                        if(self.Session[self.session].AddShape(line) is True):
+                        addedShape=self.Session[self.session].AddShape(line)
+                        if(addedShape is not None):
                             data={"message":"shape added",
                                 "status":"success",
                                 "data":None}
+                            self.Broadcast(None,addedShape,True)
                         else:
                             data={"message":"not added",
                                 "status":"fail",
@@ -361,10 +381,12 @@ class cClient():
                             "data":None}  
                     else:
                         if(len(command[1:]) == 3):
-                            if(self.Session[self.session].MoveShape(command[1],command[2],command[3])):
+                            changeShape=self.Session[self.session].MoveShape(command[1],command[2],command[3])
+                            if(changeShape is not None):
                                 data={"message":"moved shape",
                                       "status":"success",
-                                      "data":None}  
+                                      "data":None}
+                                self.Broadcast(None,changeShape,True)
                             else:
                                 data={"message":"error",
                                       "status":"fail",
@@ -380,10 +402,12 @@ class cClient():
                             "data":None}  
                     else:
                         if(len(command[1:]) == 3):
-                            if(self.Session[self.session].ScaleShape(command[1],command[2],command[3])):
+                            changeShape=self.Session[self.session].ScaleShape(command[1],command[2],command[3])
+                            if(changeShape is not None):
                                 data={"message":"scale shape",
                                       "status":"success",
                                       "data":None}  
+                                self.Broadcast(None,changeShape,True)
                             else:
                                 data={"message":"error",
                                       "status":"fail",
