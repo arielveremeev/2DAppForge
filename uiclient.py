@@ -1,10 +1,74 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 import socket
 import ipaddress
 import ssl
 import json
 import threading
+
+class ConnectDialog(tk.Toplevel):
+    def __init__(self, parent, callback):
+        super().__init__(parent)
+
+        self.callback = callback
+
+        self.title("Connect to Server")
+
+        # Get the main window position
+        parent_pos_x = parent.winfo_rootx()
+        parent_pos_y = parent.winfo_rooty()
+        parent_width = parent.winfo_width()
+        parent_height = parent.winfo_height()
+
+        # Calculate the position of the dialog to be in the center of the main window
+        dialog_width = 200
+        dialog_height = 150
+        dialog_pos_x = parent_pos_x + (parent_width - dialog_width) // 2
+        dialog_pos_y = parent_pos_y + (parent_height - dialog_height) // 2
+
+        # Set the geometry of the dialog to be in the center of the main window
+        self.geometry(f"{dialog_width}x{dialog_height}+{dialog_pos_x}+{dialog_pos_y}")
+
+        self.server_ip_label = tk.Label(self, text="Server IP:")
+        self.server_ip_label.grid(row=0, column=0, padx=5, pady=5)
+        self.server_ip_entry = tk.Entry(self)
+        self.server_ip_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        self.username_label = tk.Label(self, text="Username:")
+        self.username_label.grid(row=1, column=0, padx=5, pady=5)
+        self.username_entry = tk.Entry(self)
+        self.username_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        self.password_label = tk.Label(self, text="Password:")
+        self.password_label.grid(row=2, column=0, padx=5, pady=5)
+        self.password_entry = tk.Entry(self, show="*")
+        self.password_entry.grid(row=2, column=1, padx=5, pady=5)
+
+        self.ok_button = tk.Button(self, text="OK", command=self.on_ok)
+        self.ok_button.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
+        self.cancel_button = tk.Button(self, text="Cancel", command=self.on_cancel)
+        self.cancel_button.grid(row=3, column=1, columnspan=2, padx=5, pady=5)
+
+        self.result = None
+        self.ok_clicked = False
+        #self.center_window()
+
+
+    def on_ok(self):
+        server_ip = self.server_ip_entry.get()
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+
+        if server_ip and username and password:
+            self.result = (server_ip, username, password)
+            self.ok_clicked = True
+            self.callback(self.result)
+            self.destroy()
+
+    def on_cancel(self):
+        self.destroy()
+
 
 class SessionListFrame(tk.Frame):
     def __init__(self,parent):
@@ -54,6 +118,7 @@ class GUI(tk.Tk):
         self.login_btn.pack(side=tk.LEFT)
 
         self.disconnect_btn = tk.Button(self.nav_bar, text="Disconnect", command=self.disconnect_from_server)
+        self.disconnect_btn.configure(state=tk.DISABLED)
         self.disconnect_btn.pack(side=tk.LEFT)
 
         self.load_btn = tk.Button(self.nav_bar, text="Load File", command=self.load_file)
@@ -100,10 +165,27 @@ class GUI(tk.Tk):
         self.send_btn.pack(side=tk.LEFT)
 
     def open_login_dialog(self):
-        pass
+        dialog = ConnectDialog(self, self.on_connect)
+        dialog.grab_set()  # Make the dialog modal
+        self.wait_window(dialog)
+        if dialog.ok_clicked:
+            self.login_btn.configure(state=tk.DISABLED)
+            self.disconnect_btn.configure(state=tk.ACTIVE)
+        else:
+            self.login_btn.configure(state=tk.NORMAL)
+            self.disconnect_btn.configure(state=tk.DISABLED)
+
+    def on_connect(self, credentials):
+        if credentials:
+            server_ip, username, password = credentials
+            messagebox.showinfo("Connect", f"Connecting to server {server_ip} as {username} with password {password}")
+            # Here you can add the code to connect to the server with the provided credentials
+        else:
+            messagebox.showinfo("Connect", "Connection cancelled")
 
     def disconnect_from_server(self):
-        pass
+        self.disconnect_btn.configure(state=tk.DISABLED)
+        self.login_btn.configure(state=tk.ACTIVE)
 
     def load_file(self):
         pass
