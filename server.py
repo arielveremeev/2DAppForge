@@ -96,14 +96,18 @@ class cClient():
         self.session=None
         self.client_thread = threading.Thread(target=self.handle_client)
     
-    def Broadcast(self,msg2send,data2send,send2self:bool = False):
+    def Broadcast(self,msg2send,data2send,send2self:bool = False,refresh :bool=False):
         data={"message":msg2send,
               "status":"success",
               "data":data2send}
         jData=json.dumps(data,cls=ShapeJsonEncoder)
         for c in self.clients:
-            if(self.session == c.session and (self.client_socket != c.client_socket or send2self==True)):
-                c.client_socket.send(jData.encode('utf-8'))
+            if(refresh):
+                if(c.session is None):
+                    c.client_socket.send(jData.encode('utf-8'))
+            else:
+                if(self.session == c.session and (self.client_socket != c.client_socket or send2self==True)):
+                    c.client_socket.send(jData.encode('utf-8'))
         
 
 
@@ -226,6 +230,7 @@ class cClient():
                         data={"message":"new session created",
                             "status":"success",
                             "data":None}
+                        self.Broadcast("new session created",self.db_manager.Get_Sessions(),refresh=True)
                 
                 #print all registered sessions
                 elif(command[0]=="print_sessions"):
@@ -248,7 +253,7 @@ class cClient():
                                     data["message"]="successfully joined session"
                                     data["status"]="success"
                                     data["data"]=self.Session[self.session].shapes
-                                else:
+                                else: 
                                     data["message"]="cant join due to max participant amount"
                             else:
                                 data["message"]="cant join user is already in this session"
