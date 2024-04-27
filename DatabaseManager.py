@@ -28,7 +28,6 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                type TEXT NOT NULL,
                 owner TEXT NOT NULL,
                 creation_date TEXT NOT NULL,
                 max_participants TEXT NOT NULL
@@ -61,9 +60,8 @@ class DatabaseManager:
 
     def Create_Session(self,session):
         name=session[0]
-        sesstype=session[1]
-        maxpart=session[2]
-        owner=session[3]
+        maxpart=session[1]
+        owner=session[2]
         credate=str(date.today())
         count=self.cursor.execute("SELECT count(*) FROM sessions WHERE name=(?)",(name,)) 
         for row in count:
@@ -71,7 +69,7 @@ class DatabaseManager:
                 print("a session with this name already exists")
                 return False
             else:
-                self.cursor.execute('INSERT INTO sessions(name,type,owner,creation_date,max_participants) VALUES (?,?,?,?,?)',(name,sesstype,owner,credate,maxpart))
+                self.cursor.execute('INSERT INTO sessions(name,owner,creation_date,max_participants) VALUES (?,?,?,?)',(name,owner,credate,maxpart))
                 self.conn.commit()
                 print("session created")
                 return True
