@@ -107,6 +107,8 @@ class GUI(tk.Tk):
         self.title("2DAppForge")
         self.geometry("800x600")
 
+        self.threads=[]
+
         self.create_widgets()
     
     def create_widgets(self):
@@ -178,7 +180,27 @@ class GUI(tk.Tk):
     def on_connect(self, credentials):
         if credentials:
             server_ip, username, password = credentials
-            messagebox.showinfo("Connect", f"Connecting to server {server_ip} as {username} with password {password}")
+            
+            port=1234
+
+            if(server_ip is not None):
+                context = ssl.create_default_context()
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+
+                client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client_socket.connect((str(server_ip), port))
+                self.client_socket =  context.wrap_socket(client_socket, server_hostname=str(server_ip))
+
+                event=threading.Event()
+
+                receive_thread = threading.Thread(target=self.receive_messages, args=(event,))
+                receive_thread.start()
+                self.threads.append(receive_thread)
+
+                message=','.join(["login",str(username),str(password)])
+                self.client_socket.send(message.encode('utf-8'))
+            #messagebox.showinfo("Connect", f"Connecting to server {server_ip} as {username} with password {password}")
             # Here you can add the code to connect to the server with the provided credentials
         else:
             messagebox.showinfo("Connect", "Connection cancelled")
@@ -195,6 +217,35 @@ class GUI(tk.Tk):
 
     def send_command(self):
         pass
+
+    def log_message(self,message):
+        self.response_log.configure(state="normal")
+        self.response_log.insert(tk.END, message + "\n")
+        # Automatically scroll to the bottom
+        self.response_log.see(tk.END)
+        self.response_log.configure(state="disabled")
+
+    def receive_messages(self,event):
+        while True:
+            try:
+                # Receive message from server
+                jMessage = self.client_socket.recv(1024).decode('utf-8')
+                if jMessage:
+                    message=json.loads(jMessage)
+                    self.log_message(message["message"])
+                    if message["data"] is not None:
+                        if(type(message["data"]) is dict):
+                            for index in message["data"]:
+                                data=message["data"][index]
+                                self.log_message(f"[{index}]:{data}")
+                        else:
+                            for data in message["data"]:
+                                self.log_message(data)
+
+            except Exception as e:
+                print("Error receiving message:", e)
+                break
+
 
 if __name__ == "__main__":
     app = GUI()
