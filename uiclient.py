@@ -5,6 +5,38 @@ import ipaddress
 import ssl
 import json
 import threading
+
+class SessionListFrame(tk.Frame):
+    def __init__(self,parent):
+        tk.Frame.__init__(self, parent)
+        self.label=tk.Label(self,text="session list")
+        self.label.pack(side=tk.TOP)
+        
+        self.listbox=tk.Listbox(self)
+        self.listbox.pack(expand=True,fill=tk.BOTH)
+
+        self.leave_btn=tk.Button(self,text="leave",command=self.Leave_Sess)
+        self.leave_btn.pack(side=tk.BOTTOM)
+
+        self.join_btn=tk.Button(self,text="join",command=self.Join_Sess)
+        self.join_btn.pack(side=tk.BOTTOM)
+
+        self.create_btn=tk.Button(self,text="create",command=self.Create_Sess)
+        self.create_btn.pack(side=tk.BOTTOM)
+
+
+    def Leave_Sess(self):
+        pass
+    def Join_Sess(self):
+        pass
+    def Create_Sess(self):
+        pass
+
+
+class DrawCanvas(tk.Canvas):
+    def __init__(self,parent):
+        tk.Canvas.__init__(self,parent,bg="white")
+
 class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -33,6 +65,23 @@ class GUI(tk.Tk):
         # Main frame divided into three areas
         self.main_frame = tk.Frame(self)
         self.main_frame.pack(expand=True, fill=tk.BOTH)
+
+        self.main_left_frame=tk.Frame(self.main_frame)
+        self.user_list_label=tk.Label(self.main_left_frame,text="user list")
+        self.user_list_label.pack(side=tk.TOP)
+        self.user_list=tk.Listbox(self.main_left_frame)
+        self.user_list.pack(expand=True,fill=tk.BOTH)
+        self.main_left_frame.pack(side=tk.LEFT,expand=True,fill=tk.Y)
+
+        self.main_center_frame=tk.Frame(self.main_frame)
+        self.canvas=DrawCanvas(self.main_center_frame)
+        self.canvas.pack(expand=True, fill=tk.BOTH)
+        self.main_center_frame.pack(expand=True,fill=tk.BOTH)
+
+        self.main_right_frame=tk.Frame(self.main_frame)
+        self.session_list_widget=SessionListFrame(self.main_right_frame)
+        self.session_list_widget.pack(expand=True, fill=tk.BOTH)
+        self.main_right_frame.pack(side=tk.RIGHT,expand=True,fill=tk.Y)
 
         # Command prompt
         self.command_frame = tk.Frame(self)
