@@ -79,14 +79,17 @@ class SessionListFrame(tk.Frame):
         self.listbox=tk.Listbox(self)
         self.listbox.pack(expand=True,fill=tk.BOTH)
 
-        self.leave_btn=tk.Button(self,text="leave",command=self.Leave_Sess)
-        self.leave_btn.pack(side=tk.BOTTOM)
+        self.nav_bar = tk.Frame(self)
+        self.nav_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.join_btn=tk.Button(self,text="join",command=self.Join_Sess)
-        self.join_btn.pack(side=tk.BOTTOM)
+        self.leave_btn=tk.Button(self.nav_bar,text="leave",command=self.Leave_Sess)
+        self.leave_btn.pack(side=tk.LEFT)
 
-        self.create_btn=tk.Button(self,text="create",command=self.Create_Sess)
-        self.create_btn.pack(side=tk.BOTTOM)
+        self.join_btn=tk.Button(self.nav_bar,text="join",command=self.Join_Sess)
+        self.join_btn.pack(side=tk.RIGHT)
+
+        self.create_btn=tk.Button(self.nav_bar,text="create",command=self.Create_Sess)
+        self.create_btn.pack(side=tk.RIGHT)
 
 
     def Leave_Sess(self):
@@ -114,8 +117,7 @@ class GUI(tk.Tk):
     def create_widgets(self):
         # Navigation bar
         self.nav_bar = tk.Frame(self)
-        self.nav_bar.pack(side=tk.TOP, fill=tk.X)
-
+        
         self.login_btn = tk.Button(self.nav_bar, text="login", command=self.open_login_dialog)
         self.login_btn.pack(side=tk.LEFT)
 
@@ -128,27 +130,30 @@ class GUI(tk.Tk):
 
         self.save_btn = tk.Button(self.nav_bar, text="Save File", command=self.save_file)
         self.save_btn.pack(side=tk.RIGHT)
+        self.nav_bar.pack(side=tk.TOP, fill=tk.X)
+
 
         # Main frame divided into three areas
-        self.main_frame = tk.Frame(self)
+        self.main_frame = tk.Frame(self)#,borderwidth = 10, relief = 'ridge')
         self.main_frame.pack(expand=True, fill=tk.BOTH)
 
-        self.main_left_frame=tk.Frame(self.main_frame)
+        self.main_left_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
         self.user_list_label=tk.Label(self.main_left_frame,text="user list")
         self.user_list_label.pack(side=tk.TOP)
         self.user_list=tk.Listbox(self.main_left_frame)
         self.user_list.pack(expand=True,fill=tk.BOTH)
-        self.main_left_frame.pack(side=tk.LEFT,expand=True,fill=tk.Y)
-
-        self.main_center_frame=tk.Frame(self.main_frame)
-        self.canvas=DrawCanvas(self.main_center_frame)
-        self.canvas.pack(expand=True, fill=tk.BOTH)
-        self.main_center_frame.pack(expand=True,fill=tk.BOTH)
-
-        self.main_right_frame=tk.Frame(self.main_frame)
+        self.main_left_frame.pack(side=tk.LEFT,fill=tk.Y)
+        
+        self.main_right_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
         self.session_list_widget=SessionListFrame(self.main_right_frame)
         self.session_list_widget.pack(expand=True, fill=tk.BOTH)
-        self.main_right_frame.pack(side=tk.RIGHT,expand=True,fill=tk.Y)
+        self.main_right_frame.pack(side=tk.RIGHT,fill=tk.Y)
+
+        self.main_center_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
+        self.main_center_frame.pack(expand=True,fill=tk.BOTH)
+        self.canvas=DrawCanvas(self.main_center_frame)
+        self.canvas.pack(expand=True, fill=tk.BOTH)
+        
 
         # Command prompt
         self.command_frame = tk.Frame(self)
