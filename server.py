@@ -96,10 +96,20 @@ class cClient():
         self.session=None
         self.client_thread = threading.Thread(target=self.handle_client)
     
-    def Broadcast(self,msg2send,data2send,send2self:bool = False,refresh :bool=False):
-        data={"message":msg2send,
-              "status":"success",
-              "data":data2send}
+    def Broadcast(self,msg2send,data2send,datatype:str,send2self:bool = False,refresh :bool=False):
+        """ possible/awaited data types:
+            user_list,
+            session_list,
+            shape_list,
+            echo_text"""    
+        data={
+                "message":msg2send,
+                "status":"success",
+                "data":{
+                            "datatype":datatype,
+                            "content":data2send
+                        }
+             }
         jData=json.dumps(data,cls=ShapeJsonEncoder)
         for c in self.clients:
             if(refresh):
@@ -202,7 +212,7 @@ class cClient():
                                 "status":"fail",
                                 "data":None}
                         else:
-                            self.Broadcast(' '.join(command[1:]),None)
+                            self.Broadcast(' '.join(command[1:]),None,datatype="echo_text")
                             continue
                         
                     else:
@@ -230,14 +240,16 @@ class cClient():
                         data={"message":"new session created",
                             "status":"success",
                             "data":None}
-                        self.Broadcast("new session created",self.db_manager.Get_Sessions(),refresh=True)
+                        self.Broadcast("new session created",self.db_manager.Get_Sessions(),datatype="session_list",refresh=True)
                 
                 #print all registered sessions
                 elif(command[0]=="print_sessions"):
                     sessions=self.db_manager.Get_Sessions()
                     data={"message":"sessions and owners are : ",
                         "status":"success",
-                        "data":sessions}
+                        "data":{"datatype":"session_list",
+                                "content":sessions}
+                         }
                 #join an existing session
                 elif(command[0]=="join_session"):
                     sessname=command[1]
@@ -252,7 +264,8 @@ class cClient():
                                     self.session=sessname
                                     data["message"]="successfully joined session"
                                     data["status"]="success"
-                                    data["data"]=self.Session[self.session].shapes
+                                    data["data"]={"datatype":"shape_list",
+                                                  "content":self.Session[self.session].shapes}
                                 else: 
                                     data["message"]="cant join due to max participant amount"
                             else:
@@ -298,7 +311,7 @@ class cClient():
                                 data={"message":"file loaded",
                                     "status":"success",
                                     "data":None}
-                                self.Broadcast(None,self.Session[self.session].shapes,True)
+                                self.Broadcast(None,self.Session[self.session].shapes,datatype="shape_list",send2self=True)
 
                             else:
                                 data={"message":"Error",
@@ -317,7 +330,7 @@ class cClient():
                                 data={"message":"file saved",
                                     "status":"success",
                                     "data":None}
-                                self.Broadcast(None,self.Session[self.session].shapes,True)
+                                self.Broadcast(None,self.Session[self.session].shapes,datatype="shape_list",send2self=True)
                             else:
                                 data={"message":"Error",
                                     "status":"fail",
@@ -337,7 +350,9 @@ class cClient():
                         shapeD=self.Session[self.session].shapes                     
                         data={"message":"shapes are",
                             "status":"success",
-                            "data":shapeD}
+                            "data":{"datatype":"shape_list",
+                                    "content":shapeD}
+                             }
 
 
                 elif(command[0]=="delete_shape"):
@@ -352,7 +367,7 @@ class cClient():
                                 data={"message":"shape deleted",
                                     "status":"success",
                                     "data":None}
-                                self.Broadcast(None,deletedShape,True)
+                                self.Broadcast(None,deletedShape,datatype="shape_list",send2self=True)
                             else:
                                 data={"message":"no shape with such id",
                                     "status":"fail",
@@ -374,7 +389,7 @@ class cClient():
                             data={"message":"shape added",
                                 "status":"success",
                                 "data":None}
-                            self.Broadcast(None,addedShape,True)
+                            self.Broadcast(None,addedShape,datatype="shape_list",send2self=True)
                         else:
                             data={"message":"not added",
                                 "status":"fail",
@@ -391,7 +406,7 @@ class cClient():
                                 data={"message":"moved shape",
                                       "status":"success",
                                       "data":None}
-                                self.Broadcast(None,changeShape,True)
+                                self.Broadcast(None,changeShape,datatype="shape_list",send2self=True)
                             else:
                                 data={"message":"error",
                                       "status":"fail",
@@ -412,7 +427,7 @@ class cClient():
                                 data={"message":"scale shape",
                                       "status":"success",
                                       "data":None}  
-                                self.Broadcast(None,changeShape,True)
+                                self.Broadcast(None,changeShape,datatype="shape_list",send2self=True)
                             else:
                                 data={"message":"error",
                                       "status":"fail",
