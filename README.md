@@ -28,3 +28,8 @@ sqlite3
 # install steps:
 * creating certificate for server side
     python createsert.py
+
+# Apps
+    server.py - console server
+    client.py - console client
+    uiclient.py - tkinter based GUI client
