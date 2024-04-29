@@ -35,4 +35,4 @@ sqlite3
     uiclient.py - tkinter based GUI client
 
 # How to clone
-![Image 1](./readmeimages/how2clone_0.png)
+![Image 1](readmeimages/how2clone_0.png)
