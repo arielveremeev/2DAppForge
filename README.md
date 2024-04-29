@@ -1,29 +1,29 @@
 # install python
 ## on linux with internal venv
-sudo apt update
-sudo apt install python3
-sudo apt install pip3
-sudo apt install python3.10-venv
+    sudo apt update
+    sudo apt install python3
+    sudo apt install pip3
+    sudo apt install python3.10-venv
 
 ### other options
 TBD conda
 TBD virtualenv
 
 # create virtual enviroment 
-python3 -m venv .test1
+    python3 -m venv .test1
 ## on linux 
-source ./tet1/bin/activate
+    source ./tet1/bin/activate
 
 # required external python libraries:
-bcrypt
-pyopenssl
-pyinstaller
+    bcrypt
+    pyopenssl
+    pyinstaller
 
-pip3 install -r requirements.txt
+    pip3 install -r requirements.txt
 
 # required internal python libraries:
-socket
-sqlite3
+    socket
+    sqlite3
 
 # install steps:
 * creating certificate for server side
