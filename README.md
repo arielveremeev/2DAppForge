@@ -36,3 +36,6 @@ sqlite3
 
 # How to clone
 ![Image 1](/readmeimages/how2clone_0.png)
+![Option 1](/readmeimages/how2clone_1.png)
+![Option 2](/readmeimages/how2clone_2.png)
+![Image 3](/readmeimages/how2clone_3.png)
