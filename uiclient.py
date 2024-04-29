@@ -5,6 +5,7 @@ import ipaddress
 import ssl
 import json
 import threading
+import queue
 
 class ConnectDialog(tk.Toplevel):
     def __init__(self, parent, callback):
@@ -97,6 +98,11 @@ class SessionListFrame(tk.Frame):
         self.create_btn=tk.Button(self.nav_bar,text="create",command=self.Create_Sess)
         self.create_btn.pack(side=tk.RIGHT)
 
+    def Update_list(self,sList:dict):
+        self.listbox.delete(0,tk.END)
+        for item in sList:
+            session=','.join([str(item[0]),str(item[1])])
+            self.listbox.insert(tk.END,session)
 
     def Leave_Sess(self):
         pass
@@ -119,6 +125,15 @@ class GUI(tk.Tk):
         self.threads=[]
         self.client_socket=None
 
+        self.UpdateData = {
+            "user_list": self.update_user_list,
+            "session_list": self.update_session_list,
+            "shape_list": self.update_shape_list,
+            "echo_text":self.update_echo_text
+        }
+        # Queue for inter-thread communication
+        self.msg_queue = queue.Queue()
+        self.bind("<<Messages2Queue>>",self.ProcessMessagesFromQueue)
         self.create_widgets()
         self.log_message("Welcome")
         self.protocol("WM_DELETE_WINDOW", self.close_window)
@@ -196,6 +211,16 @@ class GUI(tk.Tk):
             self.login_btn.configure(state=tk.NORMAL)
             self.disconnect_btn.configure(state=tk.DISABLED)
 
+    def update_user_list(self,user_list:dict):
+        pass
+    def update_session_list(self,session_list:dict):
+        pass
+    def update_shape_list(self,shape_list:dict):
+        pass
+    def update_echo_text(self,echo_text:str):
+        self.log_message(echo_text)
+        pass
+
     def on_connect(self, credentials):
         if credentials:
             server_ip, username, password = credentials
@@ -211,14 +236,18 @@ class GUI(tk.Tk):
                 client_socket.connect((str(server_ip), port))
                 self.client_socket =  context.wrap_socket(client_socket, server_hostname=str(server_ip))
 
-                event=threading.Event()
+                self.response_event=threading.Event()
 
-                receive_thread = threading.Thread(target=self.receive_messages, args=(event,))
+                receive_thread = threading.Thread(target=self.receive_messages)
                 self.threads.append(receive_thread)
                 receive_thread.start()
                 
                 message=','.join(["login",str(username),str(password)])
                 self.client_socket.send(message.encode('utf-8'))
+                #self.response_event.wait()
+                #self.response_event.clear()
+                #message="print_sessions"
+                #self.client_socket.send(message.encode('utf-8'))
             #messagebox.showinfo("Connect", f"Connecting to server {server_ip} as {username} with password {password}")
             # Here you can add the code to connect to the server with the provided credentials
         else:
@@ -239,7 +268,18 @@ class GUI(tk.Tk):
     def send_command(self):
         pass
 
+    def ProcessMessagesFromQueue(self, event):
+        print("ProcessMessagesFromQueue")
+        try:
+            whole_msg = self.msg_queue.get_nowait()
+            for msg_type,data in  whole_msg.items():
+                self.UpdateData[msg_type](data)
+        except Exception as e:
+            print("Error get message from queue:", e)
+
+
     def log_message(self,message):
+        print(message)
         self.response_log.configure(state="normal")
         self.response_log.insert(tk.END, message + "\n")
         # Automatically scroll to the bottom
@@ -248,14 +288,17 @@ class GUI(tk.Tk):
         self.response_log.update_idletasks()
         self.response_log.configure(state="disabled")
         
-    def receive_messages(self,event):
+    def receive_messages(self):
         while True:
             try:
                 # Receive message from server
+                print("Start wait for response")
                 jMessage = self.client_socket.recv(1024).decode('utf-8')
                 if jMessage:
                     message=json.loads(jMessage)
-                    self.log_message(message["message"])
+                    self.msg_queue.put({"echo_text":message["message"]})
+                    print("event_generate")
+                    self.event_generate("<<Messages2Queue>>")
                     if message["data"] is not None:
                         if(type(message["data"]) is dict):
                             for index in message["data"]:
@@ -264,7 +307,7 @@ class GUI(tk.Tk):
                         else:
                             for data in message["data"]:
                                 self.log_message(data)
-
+                self.response_event.set()
             except Exception as e:
                 print("Error receiving message:", e)
                 break
