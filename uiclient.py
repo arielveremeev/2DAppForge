@@ -125,7 +125,8 @@ class GUI(tk.Tk):
         self.threads=[]
         self.client_socket=None
 
-        self.UpdateData = {
+        self.CustomEventsHandlers = {
+            "event_wait":None,
             "user_list": self.update_user_list,
             "session_list": self.update_session_list,
             "shape_list": self.update_shape_list,
@@ -214,7 +215,7 @@ class GUI(tk.Tk):
     def update_user_list(self,user_list:dict):
         pass
     def update_session_list(self,session_list:dict):
-        pass
+        self.session_list_widget.Update_list(session_list)
     def update_shape_list(self,shape_list:dict):
         pass
     def update_echo_text(self,echo_text:str):
@@ -243,15 +244,22 @@ class GUI(tk.Tk):
                 receive_thread.start()
                 
                 message=','.join(["login",str(username),str(password)])
+                self.CustomEventsHandlers["event_wait"] = self.getsessionList
                 self.client_socket.send(message.encode('utf-8'))
-                #self.response_event.wait()
-                #self.response_event.clear()
-                #message="print_sessions"
-                #self.client_socket.send(message.encode('utf-8'))
-            #messagebox.showinfo("Connect", f"Connecting to server {server_ip} as {username} with password {password}")
-            # Here you can add the code to connect to the server with the provided credentials
+                
         else:
             messagebox.showinfo("Connect", "Connection cancelled")
+
+    def getsessionList(self,dummy_data):
+        self.CustomEventsHandlers["event_wait"]=None
+        message="print_sessions"
+        print("send print_session")
+        self.client_socket.send(message.encode('utf-8'))
+    def getuserList(self,dummy_data):
+        self.CustomEventsHandlers["event_wait"]=None        
+        message="print_users"
+        print("send print_users")
+        self.client_socket.send(message.encode('utf-8'))
 
     def disconnect_from_server(self):
         if self.client_socket is not None:
@@ -268,12 +276,15 @@ class GUI(tk.Tk):
     def send_command(self):
         pass
 
+    def event_wait(self):
+        pass
     def ProcessMessagesFromQueue(self, event):
         print("ProcessMessagesFromQueue")
         try:
             whole_msg = self.msg_queue.get_nowait()
-            for msg_type,data in  whole_msg.items():
-                self.UpdateData[msg_type](data)
+            for msg_type,data in  whole_msg.items():    
+                if self.CustomEventsHandlers[msg_type] is not None:           
+                    self.CustomEventsHandlers[msg_type](data)
         except Exception as e:
             print("Error get message from queue:", e)
 
@@ -297,7 +308,7 @@ class GUI(tk.Tk):
                 if jMessage:
                     message=json.loads(jMessage)
                     self.msg_queue.put({"echo_text":message["message"]})
-                    print("event_generate")
+                    print("event_generate echo ")
                     self.event_generate("<<Messages2Queue>>")
                     if message["data"] is not None:
                         if(type(message["data"]) is dict):
@@ -307,7 +318,13 @@ class GUI(tk.Tk):
                         else:
                             for data in message["data"]:
                                 self.log_message(data)
-                self.response_event.set()
+                        self.msg_queue.put({message["data"]["datatype"]:message["data"]["content"]})
+                        print("event_generate data ")
+                        self.event_generate("<<Messages2Queue>>")
+                print("before SetEvent")
+                self.msg_queue.put({"event_wait":None})
+                self.event_generate("<<Messages2Queue>>")
+                print("after SetEvent")
             except Exception as e:
                 print("Error receiving message:", e)
                 break
