@@ -33,3 +33,6 @@ sqlite3
     server.py - console server
     client.py - console client
     uiclient.py - tkinter based GUI client
+
+# How to clone
+![Image 1](/readmeimages/how2clone_0.png)
