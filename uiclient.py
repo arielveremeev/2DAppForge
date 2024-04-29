@@ -111,9 +111,17 @@ class GUI(tk.Tk):
         self.geometry("800x600")
 
         self.threads=[]
+        self.client_socket=None
 
         self.create_widgets()
+
+        self.protocol("WM_DELETE_WINDOW", self.close_window)
     
+    def close_window(self):
+        if self.client_socket is not None:
+            self.client_socket.close()
+        self.quit()
+
     def create_widgets(self):
         # Navigation bar
         self.nav_bar = tk.Frame(self)
