@@ -31,17 +31,23 @@ class ConnectDialog(tk.Toplevel):
 
         self.server_ip_label = tk.Label(self, text="Server IP:")
         self.server_ip_label.grid(row=0, column=0, padx=5, pady=5)
-        self.server_ip_entry = tk.Entry(self)
+        self.server_ip_text = tk.StringVar() 
+        self.server_ip_text.set("192.168.0.204") 
+        self.server_ip_entry = tk.Entry(self,textvariable=self.server_ip_text)
         self.server_ip_entry.grid(row=0, column=1, padx=5, pady=5)
 
         self.username_label = tk.Label(self, text="Username:")
         self.username_label.grid(row=1, column=0, padx=5, pady=5)
-        self.username_entry = tk.Entry(self)
+        self.username_text = tk.StringVar() 
+        self.username_text.set("ariel") 
+        self.username_entry = tk.Entry(self,textvariable=self.username_text)
         self.username_entry.grid(row=1, column=1, padx=5, pady=5)
 
         self.password_label = tk.Label(self, text="Password:")
         self.password_label.grid(row=2, column=0, padx=5, pady=5)
-        self.password_entry = tk.Entry(self, show="*")
+        self.password_text = tk.StringVar() 
+        self.password_text.set("1234")
+        self.password_entry = tk.Entry(self, show="*",textvariable=self.password_text)
         self.password_entry.grid(row=2, column=1, padx=5, pady=5)
 
         self.ok_button = tk.Button(self, text="OK", command=self.on_ok)
@@ -114,7 +120,7 @@ class GUI(tk.Tk):
         self.client_socket=None
 
         self.create_widgets()
-
+        self.log_message("Welcome")
         self.protocol("WM_DELETE_WINDOW", self.close_window)
     
     def close_window(self):
@@ -208,9 +214,9 @@ class GUI(tk.Tk):
                 event=threading.Event()
 
                 receive_thread = threading.Thread(target=self.receive_messages, args=(event,))
-                receive_thread.start()
                 self.threads.append(receive_thread)
-
+                receive_thread.start()
+                
                 message=','.join(["login",str(username),str(password)])
                 self.client_socket.send(message.encode('utf-8'))
             #messagebox.showinfo("Connect", f"Connecting to server {server_ip} as {username} with password {password}")
@@ -219,6 +225,8 @@ class GUI(tk.Tk):
             messagebox.showinfo("Connect", "Connection cancelled")
 
     def disconnect_from_server(self):
+        if self.client_socket is not None:
+            self.client_socket.close()
         self.disconnect_btn.configure(state=tk.DISABLED)
         self.login_btn.configure(state=tk.ACTIVE)
 
@@ -236,8 +244,10 @@ class GUI(tk.Tk):
         self.response_log.insert(tk.END, message + "\n")
         # Automatically scroll to the bottom
         self.response_log.see(tk.END)
+        self.response_log.update()
+        self.response_log.update_idletasks()
         self.response_log.configure(state="disabled")
-
+        
     def receive_messages(self,event):
         while True:
             try:
