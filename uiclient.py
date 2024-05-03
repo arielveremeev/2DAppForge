@@ -127,6 +127,8 @@ class SessionListFrame(tk.Frame):
 
         self.callbacks=callbacks
 
+        self.current_sess=""
+
         self.label=tk.Label(self,text="session list")
         self.label.pack(side=tk.TOP)
         
@@ -177,14 +179,23 @@ class SessionListFrame(tk.Frame):
         seleceted_sess=self.listbox.get(self.listbox.curselection())
         if(seleceted_sess):
             details=seleceted_sess.split(',')
-            sessname=details[0]
-            self.callbacks["on_join_session"](sessname)
+            self.current_sess=details[0]
+            self.callbacks["on_join_session"](self.current_sess)
+            self.leave_btn.configure(state=tk.ACTIVE)
+            self.join_btn.configure(state=tk.DISABLED)
+            self.create_btn.configure(state=tk.DISABLED)
         else:
             pass
         
     
     def Leave_Sess(self):
-        pass
+        if self.current_sess != "":
+            self.callbacks["on_leave_session"]()
+
+            self.leave_btn.configure(state=tk.DISABLED)
+            self.join_btn.configure(state=tk.ACTIVE)
+            self.create_btn.configure(state=tk.ACTIVE)
+            self.current_sess=""
 
 
 
@@ -212,7 +223,8 @@ class GUI(tk.Tk):
 
         self.SessionHandlers={
             "on_create_session":self.on_create_session,
-            "on_join_session":self.on_join_session
+            "on_join_session":self.on_join_session,
+            "on_leave_session":self.on_leave_session
         }
         # Queue for inter-thread communication
         self.msg_queue = queue.Queue()
@@ -348,6 +360,13 @@ class GUI(tk.Tk):
     def on_join_session(self,sessname):
         if(self.client_socket is not None and sessname):
             message=','.join(["join_session",sessname])
+            self.client_socket.send(message.encode('utf-8'))
+        else:
+            pass
+
+    def on_leave_session(self):
+        if(self.client_socket is not None):
+            message=','.join(["exit_session"])
             self.client_socket.send(message.encode('utf-8'))
         else:
             pass
