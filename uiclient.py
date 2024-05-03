@@ -132,6 +132,8 @@ class SessionListFrame(tk.Frame):
         
         self.listbox=tk.Listbox(self)
         self.listbox.pack(expand=True,fill=tk.BOTH)
+        self.listbox.bind("<ButtonRelease-1>", self.on_select)
+        self.listbox.bind("<Double-Button-1>", self.on_double_click)
 
         self.nav_bar = tk.Frame(self)
         self.nav_bar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -140,12 +142,25 @@ class SessionListFrame(tk.Frame):
         self.leave_btn.configure(state=tk.DISABLED)
         self.leave_btn.pack(side=tk.LEFT)
 
-        self.join_btn=tk.Button(self.nav_bar,text="join",command=self.Join_Sess)
+        self.join_btn=tk.Button(self.nav_bar,text="join",command=self.open_join_sess_dialog)
         self.join_btn.configure(state=tk.DISABLED)
         self.join_btn.pack(side=tk.RIGHT)
 
         self.create_btn=tk.Button(self.nav_bar,text="create",command=self.open_create_sess_dialog)
         self.create_btn.pack(side=tk.RIGHT)
+
+    def on_select(self,event):
+        if self.listbox.curselection():
+            self.join_btn.config(state=tk.NORMAL)
+        else:
+            self.join_btn.config(state=tk.DISABLED)
+
+    def on_double_click(self,event):
+        if self.listbox.curselection():
+            self.open_join_sess_dialog()
+        else:
+            pass
+
 
     def Update_list(self,sList:dict):
         self.listbox.delete(0,tk.END)
@@ -157,11 +172,20 @@ class SessionListFrame(tk.Frame):
         dialog=CreateSessDialog(self,self.callbacks)
         dialog.grab_set()
         self.wait_window(dialog)
+
+    def open_join_sess_dialog(self):
+        seleceted_sess=self.listbox.get(self.listbox.curselection())
+        if(seleceted_sess):
+            details=seleceted_sess.split(',')
+            sessname=details[0]
+            self.callbacks["on_join_session"](sessname)
+        else:
+            pass
         
+    
     def Leave_Sess(self):
         pass
-    def Join_Sess(self):
-        pass
+
 
 
 
@@ -187,7 +211,8 @@ class GUI(tk.Tk):
         }
 
         self.SessionHandlers={
-            "on_create_session":self.on_create_session
+            "on_create_session":self.on_create_session,
+            "on_join_session":self.on_join_session
         }
         # Queue for inter-thread communication
         self.msg_queue = queue.Queue()
@@ -313,6 +338,13 @@ class GUI(tk.Tk):
             message=','.join(["create_session",name,maxpart])
             self.client_socket.send(message.encode('utf-8'))
 
+        else:
+            pass
+
+    def on_join_session(self,sessname):
+        if(self.client_socket is not None and sessname):
+            message=','.join(["join_session",sessname])
+            self.client_socket.send(message.encode('utf-8'))
         else:
             pass
 
