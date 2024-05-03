@@ -76,11 +76,57 @@ class ConnectDialog(tk.Toplevel):
     def on_cancel(self):
         self.destroy()
 
+class CreateSessDialog(tk.Toplevel):
+    def __init__(self,parent,callback):
+        super().__init__(parent)
+
+        self.callback=callback
+
+        self.title("create session")
+
+        self.sess_name = tk.Label(self, text="Enter session name")        
+        self.sess_name.pack(pady=5)
+        self.sess_name_text=tk.StringVar()
+        self.sess_name_text.set("test")
+        self.name_entry = tk.Entry(self,textvariable=self.sess_name_text)
+        self.name_entry.pack(pady=5)
+
+        self.max_part = tk.Label(self, text="Enter max amount of participants")
+        self.max_part.pack(pady=5)
+        self.sess_maxpart_text=tk.StringVar()
+        self.sess_maxpart_text.set("15")
+        self.max_entry = tk.Entry(self,textvariable=self.sess_maxpart_text)
+        self.max_entry.pack(pady=5)
+
+        
+        self.create_button = tk.Button(self, text="Create session", command=self.on_Create)
+        self.create_button.pack(side=tk.LEFT,padx=10, pady=10)
+        self.cancel_button = tk.Button(self, text="Cancel", command=self.on_cancel)
+        self.cancel_button.pack(side=tk.RIGHT,padx=10, pady=10)
+
+        self.result=None
+        self.create_clicked=False
+
+    def on_Create(self):
+        name = self.name_entry.get()
+        maxpart = self.max_entry.get()
+        print(name)
+        print(maxpart)
+        if name and maxpart:
+            self.result=(name,maxpart)
+            self.create_clicked=True
+            self.callback["on_create_session"](self.result)
+            self.destroy()
+
+    def on_cancel(self):
+        self.destroy()
 
 class SessionListFrame(tk.Frame):
-    def __init__(self,parent,client_socket):
+    def __init__(self,parent,callbacks):
         tk.Frame.__init__(self, parent)
-        self.client_socket=client_socket
+
+        self.callbacks=callbacks
+
         self.label=tk.Label(self,text="session list")
         self.label.pack(side=tk.TOP)
         
@@ -91,12 +137,14 @@ class SessionListFrame(tk.Frame):
         self.nav_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
         self.leave_btn=tk.Button(self.nav_bar,text="leave",command=self.Leave_Sess)
+        self.leave_btn.configure(state=tk.DISABLED)
         self.leave_btn.pack(side=tk.LEFT)
 
         self.join_btn=tk.Button(self.nav_bar,text="join",command=self.Join_Sess)
+        self.join_btn.configure(state=tk.DISABLED)
         self.join_btn.pack(side=tk.RIGHT)
 
-        self.create_btn=tk.Button(self.nav_bar,text="create",command=self.Create_Sess)
+        self.create_btn=tk.Button(self.nav_bar,text="create",command=self.open_create_sess_dialog)
         self.create_btn.pack(side=tk.RIGHT)
 
     def Update_list(self,sList:dict):
@@ -105,39 +153,10 @@ class SessionListFrame(tk.Frame):
             session=','.join([str(item[0]),str(item[1])])
             self.listbox.insert(tk.END,session)
 
-    def Create_Sess(self):
-        self.create_window=tk.Toplevel(self)
-        self.create_window.title("create session")
-
-        self.sess_name = tk.Label(self.new_window, text="Enter session name")
-        self.sess_name.pack(pady=5)
-        self.name_entry = tk.Entry(self.new_window)
-        self.name_entry.pack(pady=5)
-
-        self.max_part = tk.Label(self.new_window, text="Enter max amount of participants")
-        self.max_part.pack(pady=5)
-        self.max_entry = tk.Entry(self.new_window)
-        self.max_entry.pack(pady=5)
-
-        
-        self.create_button = tk.Button(self.create_window, text="Create session", command=self.create)
-        self.create_button.pack(side=tk.LEFT, padx=10, pady=10)
-        self.cancel_button = tk.Button(self.create_window, text="Cancel", command=self.create_window.destroy)
-        self.cancel_button.pack(side=tk.RIGHT, padx=10, pady=10)
-
-    def Create(self):
-        if(self.client_socket is not None):
-            name = self.name_entry.get()
-            maxpart = self.max_entry.get()
-            print(name)
-            print(maxpart)
-            message=','.join(["create_session",name,maxpart])
-            self.client_socket.send(message.encode('utf-8'))
-
-        else:
-            pass
-
-
+    def open_create_sess_dialog(self):
+        dialog=CreateSessDialog(self,self.callbacks)
+        dialog.grab_set()
+        self.wait_window(dialog)
         
     def Leave_Sess(self):
         pass
@@ -165,6 +184,10 @@ class GUI(tk.Tk):
             "session_list": self.update_session_list,
             "shape_list": self.update_shape_list,
             "echo_text":self.update_echo_text
+        }
+
+        self.SessionHandlers={
+            "on_create_session":self.on_create_session
         }
         # Queue for inter-thread communication
         self.msg_queue = queue.Queue()
@@ -209,7 +232,7 @@ class GUI(tk.Tk):
         self.main_left_frame.pack(side=tk.LEFT,fill=tk.Y)
         
         self.main_right_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
-        self.session_list_widget=SessionListFrame(self.main_right_frame,self.client_socket)
+        self.session_list_widget=SessionListFrame(self.main_right_frame,self.SessionHandlers)
         self.session_list_widget.pack(expand=True, fill=tk.BOTH)
         self.main_right_frame.pack(side=tk.RIGHT,fill=tk.Y)
 
@@ -283,6 +306,15 @@ class GUI(tk.Tk):
                 
         else:
             messagebox.showinfo("Connect", "Connection cancelled")
+    
+    def on_create_session(self,sess_details):
+        if(self.client_socket is not None and sess_details):
+            name,maxpart=sess_details
+            message=','.join(["create_session",name,maxpart])
+            self.client_socket.send(message.encode('utf-8'))
+
+        else:
+            pass
 
     def getsessionList(self,dummy_data):
         self.CustomEventsHandlers["event_wait"]=None
