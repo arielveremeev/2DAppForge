@@ -223,7 +223,11 @@ class GUI(tk.Tk):
     
     def close_window(self):
         if self.client_socket is not None:
+            self.CustomEventsHandlers["event_wait"] = self.on_close
             self.client_socket.close()
+        else:
+            self.quit()
+    def on_close(self,_):
         self.quit()
 
     def create_widgets(self):
@@ -422,8 +426,10 @@ class GUI(tk.Tk):
                         print("event_generate data ")
                 else:
                     self.msg_queue.put({"echo_text":"server disconected"})
+                    self.msg_queue.put({"event_wait":None})
                     self.event_generate("<<Messages2Queue>>")
                     self.client_socket.close()
+                    self.client_socket = None
                     break
 
                 print("before SetEvent")
