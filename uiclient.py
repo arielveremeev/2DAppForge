@@ -78,8 +78,9 @@ class ConnectDialog(tk.Toplevel):
 
 
 class SessionListFrame(tk.Frame):
-    def __init__(self,parent):
+    def __init__(self,parent,client_socket):
         tk.Frame.__init__(self, parent)
+        self.client_socket=client_socket
         self.label=tk.Label(self,text="session list")
         self.label.pack(side=tk.TOP)
         
@@ -104,12 +105,45 @@ class SessionListFrame(tk.Frame):
             session=','.join([str(item[0]),str(item[1])])
             self.listbox.insert(tk.END,session)
 
+    def Create_Sess(self):
+        self.create_window=tk.Toplevel(self)
+        self.create_window.title("create session")
+
+        self.sess_name = tk.Label(self.new_window, text="Enter session name")
+        self.sess_name.pack(pady=5)
+        self.name_entry = tk.Entry(self.new_window)
+        self.name_entry.pack(pady=5)
+
+        self.max_part = tk.Label(self.new_window, text="Enter max amount of participants")
+        self.max_part.pack(pady=5)
+        self.max_entry = tk.Entry(self.new_window)
+        self.max_entry.pack(pady=5)
+
+        
+        self.create_button = tk.Button(self.create_window, text="Create session", command=self.create)
+        self.create_button.pack(side=tk.LEFT, padx=10, pady=10)
+        self.cancel_button = tk.Button(self.create_window, text="Cancel", command=self.create_window.destroy)
+        self.cancel_button.pack(side=tk.RIGHT, padx=10, pady=10)
+
+    def Create(self):
+        if(self.client_socket is not None):
+            name = self.name_entry.get()
+            maxpart = self.max_entry.get()
+            print(name)
+            print(maxpart)
+            message=','.join(["create_session",name,maxpart])
+            self.client_socket.send(message.encode('utf-8'))
+
+        else:
+            pass
+
+
+        
     def Leave_Sess(self):
         pass
     def Join_Sess(self):
         pass
-    def Create_Sess(self):
-        pass
+
 
 
 class DrawCanvas(tk.Canvas):
@@ -175,7 +209,7 @@ class GUI(tk.Tk):
         self.main_left_frame.pack(side=tk.LEFT,fill=tk.Y)
         
         self.main_right_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
-        self.session_list_widget=SessionListFrame(self.main_right_frame)
+        self.session_list_widget=SessionListFrame(self.main_right_frame,self.client_socket)
         self.session_list_widget.pack(expand=True, fill=tk.BOTH)
         self.main_right_frame.pack(side=tk.RIGHT,fill=tk.Y)
 
@@ -280,11 +314,14 @@ class GUI(tk.Tk):
         pass
     def ProcessMessagesFromQueue(self, event):
         print("ProcessMessagesFromQueue")
+        size=self.msg_queue.qsize()
         try:
-            whole_msg = self.msg_queue.get_nowait()
-            for msg_type,data in  whole_msg.items():    
-                if self.CustomEventsHandlers[msg_type] is not None:           
-                    self.CustomEventsHandlers[msg_type](data)
+            for msg in range(size):
+                whole_msg = self.msg_queue.get_nowait()
+                for msg_type,data in  whole_msg.items():    
+                    if self.CustomEventsHandlers[msg_type] is not None:           
+                        self.CustomEventsHandlers[msg_type](data)
+
         except Exception as e:
             print("Error get message from queue:", e)
 
@@ -309,7 +346,6 @@ class GUI(tk.Tk):
                     message=json.loads(jMessage)
                     self.msg_queue.put({"echo_text":message["message"]})
                     print("event_generate echo ")
-                    self.event_generate("<<Messages2Queue>>")
                     if message["data"] is not None:
                         if(type(message["data"]) is dict):
                             for index in message["data"]:
@@ -320,7 +356,6 @@ class GUI(tk.Tk):
                                 self.log_message(data)
                         self.msg_queue.put({message["data"]["datatype"]:message["data"]["content"]})
                         print("event_generate data ")
-                        self.event_generate("<<Messages2Queue>>")
                 print("before SetEvent")
                 self.msg_queue.put({"event_wait":None})
                 self.event_generate("<<Messages2Queue>>")
