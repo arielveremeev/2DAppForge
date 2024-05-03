@@ -420,10 +420,17 @@ class GUI(tk.Tk):
                                 self.log_message(data)
                         self.msg_queue.put({message["data"]["datatype"]:message["data"]["content"]})
                         print("event_generate data ")
+                else:
+                    self.msg_queue.put({"echo_text":"server disconected"})
+                    self.event_generate("<<Messages2Queue>>")
+                    self.client_socket.close()
+                    break
+
                 print("before SetEvent")
                 self.msg_queue.put({"event_wait":None})
                 self.event_generate("<<Messages2Queue>>")
                 print("after SetEvent")
+
             except Exception as e:
                 print("Error receiving message:", e)
                 break
