@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 from tkinter import messagebox, simpledialog
 import socket
 import ipaddress
@@ -121,15 +122,15 @@ class CreateSessDialog(tk.Toplevel):
     def on_cancel(self):
         self.destroy()
 
-class SessionListFrame(tk.Frame):
+class SessionListFrame(ttk.Frame):
     def __init__(self,parent,callbacks):
-        tk.Frame.__init__(self, parent)
+        ttk.Frame.__init__(self, parent)
 
         self.callbacks=callbacks
 
         self.current_sess=""
 
-        self.label=tk.Label(self,text="session list")
+        self.label=ttk.Label(self,text="session list")
         self.label.pack(side=tk.TOP)
         
         self.listbox=tk.Listbox(self)
@@ -137,18 +138,18 @@ class SessionListFrame(tk.Frame):
         self.listbox.bind("<ButtonRelease-1>", self.on_select)
         self.listbox.bind("<Double-Button-1>", self.on_double_click)
 
-        self.nav_bar = tk.Frame(self)
+        self.nav_bar = ttk.Frame(self)
         self.nav_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.leave_btn=tk.Button(self.nav_bar,text="leave",command=self.Leave_Sess)
+        self.leave_btn=ttk.Button(self.nav_bar,text="leave",command=self.Leave_Sess)
         self.leave_btn.configure(state=tk.DISABLED)
         self.leave_btn.pack(side=tk.LEFT)
 
-        self.join_btn=tk.Button(self.nav_bar,text="join",command=self.open_join_sess_dialog)
+        self.join_btn=ttk.Button(self.nav_bar,text="join",command=self.open_join_sess_dialog)
         self.join_btn.configure(state=tk.DISABLED)
         self.join_btn.pack(side=tk.RIGHT)
 
-        self.create_btn=tk.Button(self.nav_bar,text="create",command=self.open_create_sess_dialog)
+        self.create_btn=ttk.Button(self.nav_bar,text="create",command=self.open_create_sess_dialog)
         self.create_btn.pack(side=tk.RIGHT)
 
     def on_select(self,event):
@@ -273,10 +274,16 @@ class GUI(tk.Tk):
         self.user_list.pack(expand=True,fill=tk.BOTH)
         self.main_left_frame.pack(side=tk.LEFT,fill=tk.Y)
         
-        self.main_right_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
-        self.session_list_widget=SessionListFrame(self.main_right_frame,self.SessionHandlers)
+        self.rightnotebook=ttk.Notebook(self.main_frame)
+        self.session_list_widget=SessionListFrame(self.rightnotebook,self.SessionHandlers)
         self.session_list_widget.pack(expand=True, fill=tk.BOTH)
-        self.main_right_frame.pack(side=tk.RIGHT,fill=tk.Y)
+        self.rightnotebook.add(self.session_list_widget,text="session list")
+        self.rightnotebook.pack(side=tk.RIGHT,fill=tk.Y)
+        
+        #self.main_right_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
+        #self.session_list_widget=SessionListFrame(self.main_right_frame,self.SessionHandlers)
+        #self.session_list_widget.pack(expand=True, fill=tk.BOTH)
+        #self.main_right_frame.pack(side=tk.RIGHT,fill=tk.Y)
 
         self.main_center_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
         self.main_center_frame.pack(expand=True,fill=tk.BOTH)
