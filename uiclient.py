@@ -212,6 +212,7 @@ class GUI(tk.Tk):
 
         self.threads=[]
         self.client_socket=None
+        self.verbose=tk.BooleanVar()
 
         self.CustomEventsHandlers = {
             "event_wait":None,
@@ -295,6 +296,10 @@ class GUI(tk.Tk):
 
         self.command_entry = tk.Entry(self.command_frame)
         self.command_entry.pack(side=tk.LEFT, expand=True, fill=tk.X)
+
+        self.verbose.set(False)
+        self.verbose_btn=tk.Checkbutton(self.command_frame,text="verbose",variable=self.verbose,onvalue=True,offvalue=False, command=self.on_verbose)
+        self.verbose_btn.pack(side=tk.LEFT)
 
         self.send_btn = tk.Button(self.command_frame, text="Send", command=self.send_command)
         self.send_btn.pack(side=tk.LEFT)
@@ -394,6 +399,12 @@ class GUI(tk.Tk):
     def save_file(self):
         pass
 
+    def on_verbose(self):
+        if(self.verbose.get()):
+            self.log_message("verbose turned on")
+        else:
+            self.log_message("verbose turned off")
+
     def send_command(self):
         pass
 
@@ -433,14 +444,16 @@ class GUI(tk.Tk):
                     message=json.loads(jMessage)
                     self.msg_queue.put({"echo_text":message["message"]})
                     print("event_generate echo ")
-                    if message["data"] is not None:
-                        if(type(message["data"]) is dict):
-                            for index in message["data"]:
-                                data=message["data"][index]
-                                self.log_message(f"[{index}]:{data}")
-                        else:
-                            for data in message["data"]:
-                                self.log_message(data)
+                    if (message["data"] is not None):
+                        if(self.verbose.get()):
+                            if(type(message["data"]) is dict):
+                                for index in message["data"]:
+                                    data=message["data"][index]
+                                    msg="[" + str(index) + "]" + ":" + str(data)
+                                    self.msg_queue.put({"echo_text" : msg})
+                            else:
+                                for data in message["data"]:
+                                    self.msg_queue.put({"echo_text" : data})
                         self.msg_queue.put({message["data"]["datatype"]:message["data"]["content"]})
                         print("event_generate data ")
                 else:
