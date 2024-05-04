@@ -259,8 +259,8 @@ class Shape_List_frame(ttk.Frame):
 
     def Update_list(self,sList:dict):
         self.listbox.delete(0,tk.END)
-        for item in sList:
-            session=','.join([str(item[0]),str(item[1])])
+        for Sid,shape in sList.items():
+            session=','.join([str(Sid),str(shape)])
             self.listbox.insert(tk.END,session)
 
     def add_shape(self):
@@ -402,7 +402,7 @@ class GUI(tk.Tk):
     def update_session_list(self,session_list:dict):
         self.session_list_widget.Update_list(session_list)
     def update_shape_list(self,shape_list:dict):
-        pass
+        self.shape_list_widget.Update_list(shape_list)
     def update_echo_text(self,echo_text:str):
         self.log_message(echo_text)
         pass
