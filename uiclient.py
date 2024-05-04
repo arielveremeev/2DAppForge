@@ -198,7 +198,33 @@ class SessionListFrame(ttk.Frame):
             self.create_btn.configure(state=tk.ACTIVE)
             self.current_sess=""
 
+class Shape_List_frame(ttk.Frame):
+    def __init__(self,parent,callbacks):
+        ttk.Frame.__init__(self, parent)
 
+        self.callbacks=callbacks
+
+        self.label=ttk.Label(self,text="shape list")
+        self.label.pack(side=tk.TOP)
+        
+        self.listbox=tk.Listbox(self)
+        self.listbox.pack(expand=True,fill=tk.BOTH)
+        #self.listbox.bind("<ButtonRelease-1>", self.on_select)
+
+        self.nav_bar = ttk.Frame(self)
+        self.nav_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+        self.add_btn=ttk.Button(self.nav_bar,text="add shape",command=self.add_shape)
+        self.add_btn.pack(side=tk.LEFT)
+
+        self.remove_btn=ttk.Button(self.nav_bar,text="remove shape",command=self.remove_shape)
+        self.remove_btn.pack(side=tk.RIGHT)
+
+    def add_shape(self):
+        pass
+
+    def remove_shape(self):
+        pass
 
 
 class DrawCanvas(tk.Canvas):
@@ -278,8 +304,13 @@ class GUI(tk.Tk):
         self.session_list_widget=SessionListFrame(self.rightnotebook,self.SessionHandlers)
         self.session_list_widget.pack(expand=True, fill=tk.BOTH)
         self.rightnotebook.add(self.session_list_widget,text="session list")
+
+        self.shape_list_widget=Shape_List_frame(self.rightnotebook,self.SessionHandlers)
+        self.shape_list_widget.pack(expand=True, fill=tk.BOTH)
+        self.rightnotebook.add(self.shape_list_widget,text="shape list")
+
         self.rightnotebook.pack(side=tk.RIGHT,fill=tk.Y)
-        
+
         #self.main_right_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
         #self.session_list_widget=SessionListFrame(self.main_right_frame,self.SessionHandlers)
         #self.session_list_widget.pack(expand=True, fill=tk.BOTH)
