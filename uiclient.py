@@ -122,6 +122,43 @@ class CreateSessDialog(tk.Toplevel):
     def on_cancel(self):
         self.destroy()
 
+class LoadFileDialog(tk.Toplevel):
+    def __init__(self,parent,callback):
+        super().__init__(parent)
+
+        self.callback=callback
+
+        self.title("Load file")
+
+        self.file_name = tk.Label(self, text="Enter file name")        
+        self.file_name.pack(pady=5)
+        self.file_name_text=tk.StringVar()
+        self.file_name_text.set("shapes.avsf")
+        self.file_name_entry = tk.Entry(self,textvariable=self.file_name_text)
+        self.file_name_entry.pack(pady=5)
+
+
+        
+        self.Open_button = tk.Button(self, text="Open", command=self.on_open)
+        self.Open_button.pack(side=tk.LEFT,padx=10, pady=10)
+        self.cancel_button = tk.Button(self, text="Cancel", command=self.on_cancel)
+        self.cancel_button.pack(side=tk.RIGHT,padx=10, pady=10)
+
+        self.result=None
+        self.Open_clicked=False
+
+    def on_open(self):
+        name = self.file_name_entry.get()
+        print(name)
+        if name :
+            self.result=(name)
+            self.Open_clicked=True
+            self.callback["on_load_file"](self.result)
+            self.destroy()
+
+    def on_cancel(self):
+        self.destroy()
+
 class SessionListFrame(ttk.Frame):
     def __init__(self,parent,callbacks):
         ttk.Frame.__init__(self, parent)
@@ -220,6 +257,12 @@ class Shape_List_frame(ttk.Frame):
         self.remove_btn=ttk.Button(self.nav_bar,text="remove shape",command=self.remove_shape)
         self.remove_btn.pack(side=tk.RIGHT)
 
+    def Update_list(self,sList:dict):
+        self.listbox.delete(0,tk.END)
+        for item in sList:
+            session=','.join([str(item[0]),str(item[1])])
+            self.listbox.insert(tk.END,session)
+
     def add_shape(self):
         pass
 
@@ -252,7 +295,8 @@ class GUI(tk.Tk):
         self.SessionHandlers={
             "on_create_session":self.on_create_session,
             "on_join_session":self.on_join_session,
-            "on_leave_session":self.on_leave_session
+            "on_leave_session":self.on_leave_session,
+            "on_load_file":self.on_load_file
         }
         # Queue for inter-thread communication
         self.msg_queue = queue.Queue()
@@ -414,6 +458,13 @@ class GUI(tk.Tk):
         else:
             pass
 
+    def on_load_file(self,filename):
+        if(self.client_socket is not None and filename):
+            message=','.join(["load_file",filename])
+            self.client_socket.send(message.encode('utf-8'))
+        else:
+            pass
+
     def getsessionList(self,dummy_data):
         self.CustomEventsHandlers["event_wait"]=None
         message="print_sessions"
@@ -431,8 +482,12 @@ class GUI(tk.Tk):
         self.disconnect_btn.configure(state=tk.DISABLED)
         self.login_btn.configure(state=tk.ACTIVE)
 
+
     def load_file(self):
-        pass
+        dialog=LoadFileDialog(self,self.SessionHandlers)
+        dialog.grab_set()
+        self.wait_window(dialog)
+        
 
     def save_file(self):
         pass
