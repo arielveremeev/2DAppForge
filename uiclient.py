@@ -259,9 +259,13 @@ class Shape_List_frame(ttk.Frame):
 
     def Update_list(self,sList:dict):
         self.listbox.delete(0,tk.END)
-        for Sid,shape in sList.items():
-            session=','.join([str(Sid),str(shape)])
-            self.listbox.insert(tk.END,session)
+        for Sid,details in sList.items():
+            Sdetails=details.split(" ")
+            if(Sdetails[0] == "polygon"):
+                shape= '[{:-5}] {} [{:-5}]'.format(int(Sid),Sdetails[0],int(Sdetails[1]))
+            else:
+                shape= '[{:-5}] {}'.format(int(Sid),Sdetails[0])
+            self.listbox.insert(tk.END,shape)
 
     def add_shape(self):
         pass
