@@ -296,6 +296,8 @@ class Shape_List_frame(ttk.Frame):
             else:
                 shape= '[{:-5}] {}'.format(int(srvShapeId),Sdetails[0])
             self.listbox.insert(tk.END,shape)
+    def ListClear(self):
+        self.listbox.delete(0,tk.END)
 
     def Joined_sess(self):
         if self.in_sess == False:
@@ -405,6 +407,8 @@ class GUI(tk.Tk):
         self.create_widgets()
         self.log_message("Welcome")
         self.protocol("WM_DELETE_WINDOW", self.close_window)
+
+        self.storage_shapes = dict()
     
     def close_window(self):
         if self.client_socket is not None:
@@ -560,6 +564,8 @@ class GUI(tk.Tk):
         if(self.client_socket is not None):
             message=','.join(["exit_session"])
             self.client_socket.send(message.encode('utf-8'))
+            self.shape_list_widget.ListClear()
+            self.canvas.on_clear(None)
         else:
             pass
 
