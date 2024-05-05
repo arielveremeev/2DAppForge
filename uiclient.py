@@ -274,13 +274,27 @@ class Shape_List_frame(ttk.Frame):
         self.var.set("freehand")
 
     def Update_list(self,sList:dict):
-        self.listbox.delete(0,tk.END)
+        #self.listbox.delete(0,tk.END)
         for Sid,details in sList.items():
+            self.Update_listSingle(int(Sid),details)
+
+    def Update_listSingle(self,srvShapeId:int,details:str):
+        if srvShapeId < 0:
+            srvShapeId = -srvShapeId
+            # Iterate through each item in the Listbox
+            for index in range(self.listbox.size()):
+                # Get the value of the current item
+                item_value = self.listbox.get(index)
+                # Check if the current item's value matches the value we're searching for
+                if item_value.find('[{:-5}]'.format(srvShapeId)) == 0:
+                    self.listbox.delete(index)
+                    break
+        else:
             Sdetails=details.split(" ")
             if(Sdetails[0] == "polygon"):
-                shape= '[{:-5}] {} [{:-5}]'.format(int(Sid),Sdetails[0],int(Sdetails[1]))
+                shape= '[{:-5}] {} [{:-5}]'.format(int(srvShapeId),Sdetails[0],int(Sdetails[1]))
             else:
-                shape= '[{:-5}] {}'.format(int(Sid),Sdetails[0])
+                shape= '[{:-5}] {}'.format(int(srvShapeId),Sdetails[0])
             self.listbox.insert(tk.END,shape)
 
     def Joined_sess(self):
@@ -615,6 +629,7 @@ class GUI(tk.Tk):
             for msg in range(size):
                 whole_msg = self.msg_queue.get_nowait()
                 for msg_type,data in  whole_msg.items():    
+                    
                     if self.CustomEventsHandlers[msg_type] is not None:           
                         self.CustomEventsHandlers[msg_type](data)
 
@@ -623,14 +638,15 @@ class GUI(tk.Tk):
 
 
     def log_message(self,message):
-        print(message)
-        self.response_log.configure(state="normal")
-        self.response_log.insert(tk.END, message + "\n")
-        # Automatically scroll to the bottom
-        self.response_log.see(tk.END)
-        self.response_log.update()
-        self.response_log.update_idletasks()
-        self.response_log.configure(state="disabled")
+        if message:
+            print(message)
+            self.response_log.configure(state="normal")
+            self.response_log.insert(tk.END, message + "\n")
+            # Automatically scroll to the bottom
+            self.response_log.see(tk.END)
+            self.response_log.update()
+            self.response_log.update_idletasks()
+            self.response_log.configure(state="disabled")
         
     def receive_messages(self):
         while True:
