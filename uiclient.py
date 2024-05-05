@@ -236,10 +236,12 @@ class SessionListFrame(ttk.Frame):
             self.current_sess=""
 
 class Shape_List_frame(ttk.Frame):
-    def __init__(self,parent,callbacks):
+    def __init__(self,parent,callbacks,cCallbacks):
         ttk.Frame.__init__(self, parent)
 
         self.callbacks=callbacks
+        self.canvascallbacks=cCallbacks
+        self.in_sess=False
 
         self.label=ttk.Label(self,text="shape list")
         self.label.pack(side=tk.TOP)
@@ -251,11 +253,25 @@ class Shape_List_frame(ttk.Frame):
         self.nav_bar = ttk.Frame(self)
         self.nav_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.add_btn=ttk.Button(self.nav_bar,text="add shape",command=self.add_shape)
-        self.add_btn.pack(side=tk.LEFT)
+        self.clear_btn=ttk.Button(self.nav_bar,text="clear canvas",command=self.clear_canvas)
+        self.clear_btn.configure(state=tk.DISABLED)
+        self.clear_btn.pack(side=tk.RIGHT)
+        
+        self.var=tk.StringVar()
 
-        self.remove_btn=ttk.Button(self.nav_bar,text="remove shape",command=self.remove_shape)
-        self.remove_btn.pack(side=tk.RIGHT)
+        self.draw_freehand_button=tk.Radiobutton(self.nav_bar,text="freehand",variable=self.var,value="freehand",command=self.sel)
+        self.draw_freehand_button.configure(state=tk.DISABLED)
+        self.draw_freehand_button.pack(anchor=tk.W)
+
+        self.draw_circle_button=tk.Radiobutton(self.nav_bar,text="circle",variable=self.var,value="circle",command=self.sel)
+        self.draw_circle_button.configure(state=tk.DISABLED)
+        self.draw_circle_button.pack(anchor=tk.W)
+
+        self.draw_rectangle_button=tk.Radiobutton(self.nav_bar,text="rectangle",variable=self.var,value="rectangle",command=self.sel)
+        self.draw_rectangle_button.configure(state=tk.DISABLED)
+        self.draw_rectangle_button.pack(anchor=tk.W)
+
+        self.var.set("freehand")
 
     def Update_list(self,sList:dict):
         self.listbox.delete(0,tk.END)
@@ -267,16 +283,76 @@ class Shape_List_frame(ttk.Frame):
                 shape= '[{:-5}] {}'.format(int(Sid),Sdetails[0])
             self.listbox.insert(tk.END,shape)
 
-    def add_shape(self):
-        pass
+    def Joined_sess(self):
+        if self.in_sess == False:
+            self.in_sess=True
+            self.clear_btn.configure(state=tk.ACTIVE)
+            self.draw_freehand_button.configure(state=tk.ACTIVE)
+            self.draw_circle_button.configure(state=tk.ACTIVE)
+            self.draw_rectangle_button.configure(state=tk.ACTIVE)
+        
 
-    def remove_shape(self):
-        pass
+    def sel(self):
+        print("You selected the option " + str(self.var.get()))
+        self.canvascallbacks["on_change_type"](str(self.var.get()))
+
+    def clear_canvas(self):
+        self.canvascallbacks["on_clear_canvas"]
 
 
 class DrawCanvas(tk.Canvas):
-    def __init__(self,parent):
+    def __init__(self,parent,callbacks):
         tk.Canvas.__init__(self,parent,bg="white")
+        
+        self.callbacks=callbacks
+        self.selectedtype=""
+        self.canvas_status=False
+
+        self.start_x = None
+        self.start_y = None
+        self.current_shape_item = None
+
+    def change_draw_type(self,text):
+        if text:
+            self.selectedtype=text
+            print("current drawing type is " + str(self.selectedtype))
+
+    def toggle_canvas(self):
+        self.canvas_status=True
+        self.bind("<Button-1>", self.start_draw)
+        self.bind("<B1-Motion>", self.draw_shape)
+        self.bind("<ButtonRelease-1>", self.stop_draw)
+
+    def start_draw(self, event):
+        self.start_x = event.x
+        self.start_y = event.y
+        if self.selectedtype == "rectangle":
+            self.current_shape_item = self.create_rectangle(
+                self.start_x, self.start_y, self.start_x, self.start_y, outline="black"
+            )
+        elif self.selectedtype == "circle":
+            self.current_shape_item = self.create_oval(
+                self.start_x, self.start_y, self.start_x, self.start_y, outline="black"
+            )
+
+    def draw_shape(self, event):
+        if self.current_shape_item:
+            x, y = event.x, event.y
+            self.coords(self.current_shape_item, self.start_x, self.start_y, x, y)
+    
+    def stop_draw(self, event):
+        Ccoords=self.coords(self.current_shape_item)
+        print(Ccoords)
+        if(self.selectedtype == "rectangle"):
+            coords=str(Ccoords[0]) + ";"+str(Ccoords[1]) + ";" + str(Ccoords[2]) + ";" + str(Ccoords[1]) + ";" + str(Ccoords[0])+ ";" + str(Ccoords[3])+ ";" + str(Ccoords[2])+ ";" + str(Ccoords[3])
+            shape="square 4 "+ coords
+            print(shape)
+            self.callbacks["on_shape_finish"](shape)
+        self.current_shape_item = None
+
+    def on_clear(self,event):
+        self.delete("all")
+
 
 class GUI(tk.Tk):
     def __init__(self):
@@ -302,6 +378,13 @@ class GUI(tk.Tk):
             "on_leave_session":self.on_leave_session,
             "on_load_file":self.on_load_file
         }
+
+        self.CanvasHandlers={
+            "on_change_type":self.on_change_draw_type,
+            "on_clear_canvas":self.on_clear_canvas,
+            "on_shape_finish":self.send_new_shape
+        }
+
         # Queue for inter-thread communication
         self.msg_queue = queue.Queue()
         self.bind("<<Messages2Queue>>",self.ProcessMessagesFromQueue)
@@ -353,7 +436,7 @@ class GUI(tk.Tk):
         self.session_list_widget.pack(expand=True, fill=tk.BOTH)
         self.rightnotebook.add(self.session_list_widget,text="session list")
 
-        self.shape_list_widget=Shape_List_frame(self.rightnotebook,self.SessionHandlers)
+        self.shape_list_widget=Shape_List_frame(self.rightnotebook,self.SessionHandlers,self.CanvasHandlers)
         self.shape_list_widget.pack(expand=True, fill=tk.BOTH)
         self.rightnotebook.add(self.shape_list_widget,text="shape list")
 
@@ -366,7 +449,7 @@ class GUI(tk.Tk):
 
         self.main_center_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
         self.main_center_frame.pack(expand=True,fill=tk.BOTH)
-        self.canvas=DrawCanvas(self.main_center_frame)
+        self.canvas=DrawCanvas(self.main_center_frame,self.CanvasHandlers)
         self.canvas.pack(expand=True, fill=tk.BOTH)
         
 
@@ -411,6 +494,8 @@ class GUI(tk.Tk):
         self.log_message(echo_text)
         pass
 
+    
+
     def on_connect(self, credentials):
         if credentials:
             server_ip, username, password = credentials
@@ -450,6 +535,8 @@ class GUI(tk.Tk):
 
     def on_join_session(self,sessname):
         if(self.client_socket is not None and sessname):
+            self.shape_list_widget.Joined_sess()
+            self.canvas.toggle_canvas()
             message=','.join(["join_session",sessname])
             self.client_socket.send(message.encode('utf-8'))
         else:
@@ -465,6 +552,20 @@ class GUI(tk.Tk):
     def on_load_file(self,filename):
         if(self.client_socket is not None and filename):
             message=','.join(["load_file",filename])
+            self.client_socket.send(message.encode('utf-8'))
+        else:
+            pass
+
+    def on_change_draw_type(self,draw_type):
+        if draw_type:
+            self.canvas.change_draw_type(draw_type)
+
+    def on_clear_canvas(self):
+        self.canvas.on_clear()
+
+    def send_new_shape(self,shape):
+        if (self.client_socket is not None and shape):
+            message=",".join(["add_shape",str(shape)])
             self.client_socket.send(message.encode('utf-8'))
         else:
             pass
