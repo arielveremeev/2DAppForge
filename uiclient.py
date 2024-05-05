@@ -366,6 +366,23 @@ class DrawCanvas(tk.Canvas):
             self.callbacks["on_shape_finish"](shape)
         self.current_shape_item = None
 
+    def add_shape(self,details)->list:
+        ids = []
+        shapeProperties = details.split(' ')
+        if shapeProperties[0] == "square":
+           coords = shapeProperties[2].split(";")
+           current_shape_item = self.create_rectangle(
+                float(coords[0]), float(coords[1]), float(coords[6]), float(coords[7]), outline="black"
+            )
+        elif shapeProperties[0] == "circle":
+            current_shape_item = self.create_oval(
+                self.start_x, self.start_y, self.start_x, self.start_y, outline="black"
+            )
+        ids.append(current_shape_item)
+
+    def remove_shapes(self,ids:list):
+        pass
+
     def on_clear(self,event):
         self.delete("all")
 
@@ -506,8 +523,21 @@ class GUI(tk.Tk):
         pass
     def update_session_list(self,session_list:dict):
         self.session_list_widget.Update_list(session_list)
+
     def update_shape_list(self,shape_list:dict):
-        self.shape_list_widget.Update_list(shape_list)
+        for Sid,details in shape_list.items():
+            srvShapeId = int(Sid)
+            self.shape_list_widget.Update_listSingle(srvShapeId,details)
+
+            if srvShapeId < 0:
+                srvShapeId = -srvShapeId
+                canvasIds = self.storage_shapes.pop(srvShapeId)
+                self.canvas.remove_shape(canvasIds)
+            else:               
+                # canvas may return list of ids
+                self.storage_shapes[srvShapeId] = self.canvas.add_shape(details)
+                
+
     def update_echo_text(self,echo_text:str):
         self.log_message(echo_text)
         pass
@@ -566,6 +596,7 @@ class GUI(tk.Tk):
             self.client_socket.send(message.encode('utf-8'))
             self.shape_list_widget.ListClear()
             self.canvas.on_clear(None)
+            self.storage_shapes = None
         else:
             pass
 
