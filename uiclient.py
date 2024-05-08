@@ -271,6 +271,10 @@ class Shape_List_frame(ttk.Frame):
         self.draw_rectangle_button.configure(state=tk.DISABLED)
         self.draw_rectangle_button.pack(anchor=tk.W)
 
+        self.draw_triangle_button=tk.Radiobutton(self.nav_bar,text="triangle",variable=self.var,value="triangle",command=self.sel)
+        self.draw_triangle_button.configure(state=tk.DISABLED)
+        self.draw_triangle_button.pack(anchor=tk.W)
+
         self.var.set("freehand")
 
     def Update_list(self,sList:dict):
@@ -306,6 +310,7 @@ class Shape_List_frame(ttk.Frame):
             self.draw_freehand_button.configure(state=tk.ACTIVE)
             self.draw_circle_button.configure(state=tk.ACTIVE)
             self.draw_rectangle_button.configure(state=tk.ACTIVE)
+            self.draw_triangle_button.configure(state=tk.ACTIVE)
         
 
     def sel(self):
@@ -346,6 +351,12 @@ class DrawCanvas(tk.Canvas):
             self.current_shape_item = self.create_rectangle(
                 self.start_x, self.start_y, self.start_x, self.start_y, outline="black"
             )
+
+        elif self.selectedtype == "triangle":
+            self.current_shape_item=self.create_polygon(
+                self.start_x,self.start_y,self.start_x,self.start_y,self.start_x,self.start_y,outline="black",fill=""
+            )
+            
         elif self.selectedtype == "circle":
             self.current_shape_item = self.create_oval(
                 self.start_x, self.start_y, self.start_x, self.start_y, outline="black"
@@ -353,8 +364,18 @@ class DrawCanvas(tk.Canvas):
 
     def draw_shape(self, event):
         if self.current_shape_item:
-            x, y = event.x, event.y
-            self.coords(self.current_shape_item, self.start_x, self.start_y, x, y)
+            if(self.selectedtype=="circle"):
+                x= event.x
+                y=(x-self.start_x) + self.start_y
+                self.coords(self.current_shape_item, self.start_x, self.start_y, x, y)
+            elif(self.selectedtype=="triangle"):
+                if(event.x > self.start_x):
+                    self.coords(self.current_shape_item,self.start_x,self.start_y,event.x,event.y,self.start_x-(event.x-self.start_x),event.y)
+                else:
+                    self.coords(self.current_shape_item,self.start_x,self.start_y,event.x,event.y,(self.start_x - event.x) + self.start_x,event.y)
+            else:
+                x, y = event.x, event.y
+                self.coords(self.current_shape_item, self.start_x, self.start_y, x, y)
     
     def stop_draw(self, event):
         Ccoords=self.coords(self.current_shape_item)
@@ -364,24 +385,70 @@ class DrawCanvas(tk.Canvas):
             shape="square 4 "+ coords
             print(shape)
             self.callbacks["on_shape_finish"](shape)
+
+        elif(self.selectedtype == "triangle"):
+            coords=str(Ccoords[0]) + ";"+str(Ccoords[1]) + ";" +str(Ccoords[2]) + ";"+str(Ccoords[3]) + ";" +str(Ccoords[4]) + ";"+str(Ccoords[5]) 
+            shape="triangle 3 "+coords
+            print(shape)
+            self.callbacks["on_shape_finish"](shape)
+
+        elif(self.selectedtype=="circle"):
+            print(Ccoords[0])
+            print(Ccoords[1])
+            print(Ccoords[2])
+            print(Ccoords[3])
+            center=self.get_center(Ccoords[0],Ccoords[1],Ccoords[2],Ccoords[3])
+            radius=self.get_radius(Ccoords[ 0],Ccoords[2])
+            CenCord=str(center[0]) + ";" + str(center[1])
+            shape="circle 1 " + str(CenCord) + " " + str(radius)
+            self.callbacks["on_shape_finish"](shape)
+        
         self.current_shape_item = None
 
     def add_shape(self,details)->list:
-        ids = []
         shapeProperties = details.split(' ')
         if shapeProperties[0] == "square":
            coords = shapeProperties[2].split(";")
            current_shape_item = self.create_rectangle(
                 float(coords[0]), float(coords[1]), float(coords[6]), float(coords[7]), outline="black"
             )
-        elif shapeProperties[0] == "circle":
-            current_shape_item = self.create_oval(
-                self.start_x, self.start_y, self.start_x, self.start_y, outline="black"
+           
+        elif(shapeProperties[0] == "triangle"):
+            coords=shapeProperties[2].split(";")
+            print(coords)
+            current_shape_item=self.create_polygon(
+                float(coords[0]), float(coords[1]), float(coords[2]), float(coords[3]),float(coords[4]), float(coords[5]),outline="black",fill=""
             )
-        ids.append(current_shape_item)
+        elif shapeProperties[0] == "circle":
+            radius=shapeProperties[3]
+            Scoords = shapeProperties[2].split(";")
+            Ccoords=self.get_circle_points(radius,Scoords)
+            current_shape_item = self.create_oval(
+                float(Ccoords[0]), float(Ccoords[1]), float(Ccoords[2]), float(Ccoords[3]), outline="black"
+            )
+        return current_shape_item
 
     def remove_shapes(self,ids:list):
         pass
+
+    def get_center(self,x1, y1, x2, y2):
+        center_x = (x1 + x2) / 2
+        center_y = (y1 + y2) / 2
+        return center_x, center_y
+
+    def get_radius(self,x1, x2):
+        radius = abs(x2 - x1) / 2
+        return radius
+    
+    def get_circle_points(self,Sradius,Scoords):
+        radius=float(Sradius)
+        Ccoords=[]
+        Ccoords.append(float(Scoords[0]) - radius)
+        Ccoords.append(float(Scoords[1]) - radius)
+        Ccoords.append(float(Scoords[0]) + radius)
+        Ccoords.append(float(Scoords[1]) + radius)
+
+        return Ccoords
 
     def on_clear(self,event):
         self.delete("all")
@@ -526,6 +593,7 @@ class GUI(tk.Tk):
 
     def update_shape_list(self,shape_list:dict):
         for Sid,details in shape_list.items():
+            print(Sid)
             srvShapeId = int(Sid)
             self.shape_list_widget.Update_listSingle(srvShapeId,details)
 
@@ -536,6 +604,8 @@ class GUI(tk.Tk):
             else:               
                 # canvas may return list of ids
                 self.storage_shapes[srvShapeId] = self.canvas.add_shape(details)
+                
+        print("yes")
                 
 
     def update_echo_text(self,echo_text:str):
@@ -596,7 +666,7 @@ class GUI(tk.Tk):
             self.client_socket.send(message.encode('utf-8'))
             self.shape_list_widget.ListClear()
             self.canvas.on_clear(None)
-            self.storage_shapes = None
+            self.storage_shapes.clear()
         else:
             pass
 
