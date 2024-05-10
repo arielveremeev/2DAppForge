@@ -256,6 +256,10 @@ class Shape_List_frame(ttk.Frame):
         self.clear_btn=ttk.Button(self.nav_bar,text="clear canvas",command=self.clear_canvas)
         self.clear_btn.configure(state=tk.DISABLED)
         self.clear_btn.pack(side=tk.RIGHT)
+
+        self.delete_btn=ttk.Button(self.nav_bar,text="delete",command=self.delete_shape)
+        self.delete_btn.configure(state=tk.DISABLED)
+        self.delete_btn.pack(side=tk.RIGHT)
         
         self.var=tk.StringVar()
 
@@ -276,6 +280,8 @@ class Shape_List_frame(ttk.Frame):
         self.draw_triangle_button.pack(anchor=tk.W)
 
         self.var.set("freehand")
+
+        self.listbox.bind('<<ListboxSelect>>', self.on_select)
 
     def Update_list(self,sList:dict):
         #self.listbox.delete(0,tk.END)
@@ -316,6 +322,25 @@ class Shape_List_frame(ttk.Frame):
     def sel(self):
         print("You selected the option " + str(self.var.get()))
         self.canvascallbacks["on_change_type"](str(self.var.get()))
+
+    def on_select(self,event):
+        if self.listbox.curselection():
+            self.delete_btn.config(state=tk.NORMAL)
+        else:
+            self.delete_btn.config(state=tk.DISABLED)
+
+    def delete_shape(self):
+        print("delete")
+        selected_shape=self.listbox.curselection()
+        if(selected_shape):
+            index=int(selected_shape[0])
+            selected_shape = self.listbox.get(index)
+            selected_shapeID=selected_shape[1:6]
+            shapeid=selected_shapeID.strip()
+            print(shapeid)
+            self.canvascallbacks["on_delete_shape"](shapeid)
+            self.listbox.delete(index)
+        self.delete_btn.config(state=tk.DISABLED)
 
     def clear_canvas(self):
         self.canvascallbacks["on_clear_canvas"]
@@ -384,13 +409,11 @@ class DrawCanvas(tk.Canvas):
             coords=str(Ccoords[0]) + ";"+str(Ccoords[1]) + ";" + str(Ccoords[2]) + ";" + str(Ccoords[1]) + ";" + str(Ccoords[0])+ ";" + str(Ccoords[3])+ ";" + str(Ccoords[2])+ ";" + str(Ccoords[3])
             shape="square 4 "+ coords
             print(shape)
-            self.callbacks["on_shape_finish"](shape)
 
         elif(self.selectedtype == "triangle"):
             coords=str(Ccoords[0]) + ";"+str(Ccoords[1]) + ";" +str(Ccoords[2]) + ";"+str(Ccoords[3]) + ";" +str(Ccoords[4]) + ";"+str(Ccoords[5]) 
             shape="triangle 3 "+coords
             print(shape)
-            self.callbacks["on_shape_finish"](shape)
 
         elif(self.selectedtype=="circle"):
             print(Ccoords[0])
@@ -401,8 +424,9 @@ class DrawCanvas(tk.Canvas):
             radius=self.get_radius(Ccoords[ 0],Ccoords[2])
             CenCord=str(center[0]) + ";" + str(center[1])
             shape="circle 1 " + str(CenCord) + " " + str(radius)
-            self.callbacks["on_shape_finish"](shape)
-        
+
+        self.delete(self.current_shape_item)
+        self.callbacks["on_shape_finish"](shape)
         self.current_shape_item = None
 
     def add_shape(self,details)->list:
@@ -426,11 +450,20 @@ class DrawCanvas(tk.Canvas):
             current_shape_item = self.create_oval(
                 float(Ccoords[0]), float(Ccoords[1]), float(Ccoords[2]), float(Ccoords[3]), outline="black"
             )
+        print("from add shape",current_shape_item)
         return current_shape_item
 
-    def remove_shapes(self,ids:list):
-        pass
-
+    def remove_shape(self,Sid):
+        if Sid:
+            #self.delete(Sid)
+            if self.find_withtag(Sid):
+                print("shape exists in canvas")
+                self.delete(Sid)
+                if self.find_withtag(Sid):
+                    print("wtf wasnt deleted")
+            self.update_idletasks()
+            self.update()
+            
     def get_center(self,x1, y1, x2, y2):
         center_x = (x1 + x2) / 2
         center_y = (y1 + y2) / 2
@@ -482,7 +515,8 @@ class GUI(tk.Tk):
         self.CanvasHandlers={
             "on_change_type":self.on_change_draw_type,
             "on_clear_canvas":self.on_clear_canvas,
-            "on_shape_finish":self.send_new_shape
+            "on_shape_finish":self.send_new_shape,
+            "on_delete_shape":self.delete_shape
         }
 
         # Queue for inter-thread communication
@@ -599,8 +633,11 @@ class GUI(tk.Tk):
 
             if srvShapeId < 0:
                 srvShapeId = -srvShapeId
-                canvasIds = self.storage_shapes.pop(srvShapeId)
-                self.canvas.remove_shape(canvasIds)
+                if srvShapeId in self.storage_shapes.keys():
+                    canvasId = self.storage_shapes.pop(srvShapeId)
+                    print("from remove shape",canvasId)
+                    self.canvas.remove_shape(canvasId)
+                self.update()
             else:               
                 # canvas may return list of ids
                 self.storage_shapes[srvShapeId] = self.canvas.add_shape(details)
@@ -690,6 +727,14 @@ class GUI(tk.Tk):
             self.client_socket.send(message.encode('utf-8'))
         else:
             pass
+    
+    def delete_shape(self,shapeid):
+        if (self.client_socket is not None and shapeid):
+            message=",".join(["delete_shape",str(shapeid)])
+            self.client_socket.send(message.encode('utf-8'))
+        else:
+            pass
+
 
     def getsessionList(self,dummy_data):
         self.CustomEventsHandlers["event_wait"]=None
