@@ -325,6 +325,10 @@ class Shape_List_frame(ttk.Frame):
 
     def on_select(self,event):
         if self.listbox.curselection():
+            selected_shape=self.listbox.curselection()
+            index=int(selected_shape[0])
+            shapeid=self.get_shape_id(index)
+            self.canvascallbacks["on_shape_select"](shapeid)
             self.delete_btn.config(state=tk.NORMAL)
         else:
             self.delete_btn.config(state=tk.DISABLED)
@@ -334,13 +338,17 @@ class Shape_List_frame(ttk.Frame):
         selected_shape=self.listbox.curselection()
         if(selected_shape):
             index=int(selected_shape[0])
-            selected_shape = self.listbox.get(index)
-            selected_shapeID=selected_shape[1:6]
-            shapeid=selected_shapeID.strip()
+            shapeid=self.get_shape_id(selected_shape,index)
             print(shapeid)
             self.canvascallbacks["on_delete_shape"](shapeid)
             self.listbox.delete(index)
         self.delete_btn.config(state=tk.DISABLED)
+
+    def get_shape_id(self,index):
+        selected_shape = self.listbox.get(index)
+        selected_shapeID=selected_shape[1:6]
+        shapeid=selected_shapeID.strip()
+        return int(shapeid)
 
     def clear_canvas(self):
         self.canvascallbacks["on_clear_canvas"]
@@ -357,6 +365,21 @@ class DrawCanvas(tk.Canvas):
         self.start_x = None
         self.start_y = None
         self.current_shape_item = None
+        
+        self.bind("<Button-1>", self.on_shape_click)
+
+    def on_shape_click(self, event):
+
+        print("on shape pressed")
+        if event.state & 0x4:
+            shape_id = self.find_withtag(tk.CURRENT)
+            if shape_id:
+                shape_id = shape_id[0]
+                print("shape pressed")
+                bbox = self.bbox(shape_id)
+                if self.shape_tags[shape_id]:
+                    self.delete(self.shape_tags[shape_id])
+                self.shape_tags[shape_id] = self.create_rectangle(bbox, outline="black")
 
     def change_draw_type(self,text):
         if text:
@@ -453,6 +476,12 @@ class DrawCanvas(tk.Canvas):
         print("from add shape",current_shape_item)
         return current_shape_item
 
+    def draw_shape_bb(self,Sid):
+        self.delete("bounding_box")
+        if Sid:
+            x1, y1, x2, y2 = self.bbox(Sid)
+            self.create_rectangle(x1, y1, x2, y2, outline="red", tags="bounding_box")
+
     def remove_shape(self,Sid):
         if Sid:
             #self.delete(Sid)
@@ -516,7 +545,8 @@ class GUI(tk.Tk):
             "on_change_type":self.on_change_draw_type,
             "on_clear_canvas":self.on_clear_canvas,
             "on_shape_finish":self.send_new_shape,
-            "on_delete_shape":self.delete_shape
+            "on_delete_shape":self.delete_shape,
+            "on_shape_select":self.select_shape
         }
 
         # Queue for inter-thread communication
@@ -734,6 +764,9 @@ class GUI(tk.Tk):
             self.client_socket.send(message.encode('utf-8'))
         else:
             pass
+    def select_shape(self,servId):
+        if servId:
+            self.canvas.draw_shape_bb(self.storage_shapes[servId])
 
 
     def getsessionList(self,dummy_data):
