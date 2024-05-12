@@ -253,6 +253,30 @@ class Shape_List_frame(ttk.Frame):
         self.nav_bar = ttk.Frame(self)
         self.nav_bar.pack(side=tk.BOTTOM, fill=tk.X)
 
+        self.mode=tk.StringVar()
+
+        self.edit_mode_button=tk.Radiobutton(self,text="edit mode",variable=self.mode,value="edit",command=self.toggle_edit)
+        self.edit_mode_button.configure(state=tk.DISABLED)
+        self.edit_mode_button.pack(side=tk.RIGHT)
+
+        self.draw_mode_button=tk.Radiobutton(self,text="draw mode",variable=self.mode,value="draw",command=self.toggle_draw)
+        self.draw_mode_button.configure(state=tk.DISABLED)
+        self.draw_mode_button.pack(side=tk.LEFT)
+
+        self.mode.set("draw")
+
+        self.edit=tk.StringVar()
+
+        self.move_btn=tk.Radiobutton(self.nav_bar,text="move shape",variable=self.edit,value="move",command=self.move_shape)
+        self.move_btn.configure(state=tk.DISABLED)
+        self.move_btn.pack(side=tk.RIGHT)
+
+        self.scale_btn=tk.Radiobutton(self.nav_bar,text="scale shape",variable=self.edit,value="scale",command=self.move_shape)
+        self.scale_btn.configure(state=tk.DISABLED)
+        self.scale_btn.pack(side=tk.RIGHT)
+
+        self.edit.set(None)
+
         self.clear_btn=ttk.Button(self.nav_bar,text="clear canvas",command=self.clear_canvas)
         self.clear_btn.configure(state=tk.DISABLED)
         self.clear_btn.pack(side=tk.RIGHT)
@@ -260,7 +284,9 @@ class Shape_List_frame(ttk.Frame):
         self.delete_btn=ttk.Button(self.nav_bar,text="delete",command=self.delete_shape)
         self.delete_btn.configure(state=tk.DISABLED)
         self.delete_btn.pack(side=tk.RIGHT)
-        
+
+
+
         self.var=tk.StringVar()
 
         self.draw_freehand_button=tk.Radiobutton(self.nav_bar,text="freehand",variable=self.var,value="freehand",command=self.sel)
@@ -279,9 +305,33 @@ class Shape_List_frame(ttk.Frame):
         self.draw_triangle_button.configure(state=tk.DISABLED)
         self.draw_triangle_button.pack(anchor=tk.W)
 
-        self.var.set("freehand")
+        self.var.set(None)
 
         self.listbox.bind('<<ListboxSelect>>', self.on_select)
+
+    def toggle_draw(self):
+        self.draw_freehand_button.configure(state=tk.ACTIVE)
+        self.draw_circle_button.configure(state=tk.ACTIVE)
+        self.draw_rectangle_button.configure(state=tk.ACTIVE)
+        self.draw_triangle_button.configure(state=tk.ACTIVE)
+
+        self.move_btn.configure(state=tk.DISABLED)
+        self.scale_btn.configure(state=tk.DISABLED)
+        self.edit.set(None)
+
+        self.canvascallbacks["on_change_draw"]("draw")
+
+    def toggle_edit(self):
+        self.draw_freehand_button.configure(state=tk.DISABLED)
+        self.draw_circle_button.configure(state=tk.DISABLED)
+        self.draw_rectangle_button.configure(state=tk.DISABLED)
+        self.draw_triangle_button.configure(state=tk.DISABLED)
+        self.var.set(None)
+
+        self.move_btn.configure(state=tk.ACTIVE)
+        self.scale_btn.configure(state=tk.ACTIVE)
+
+        self.canvascallbacks["on_change_draw"]("edit")
 
     def Update_list(self,sList:dict):
         #self.listbox.delete(0,tk.END)
@@ -312,6 +362,8 @@ class Shape_List_frame(ttk.Frame):
     def Joined_sess(self):
         if self.in_sess == False:
             self.in_sess=True
+            self.draw_mode_button.configure(state=tk.ACTIVE)
+            self.edit_mode_button.configure(state=tk.ACTIVE)
             self.clear_btn.configure(state=tk.ACTIVE)
             self.draw_freehand_button.configure(state=tk.ACTIVE)
             self.draw_circle_button.configure(state=tk.ACTIVE)
@@ -322,6 +374,9 @@ class Shape_List_frame(ttk.Frame):
     def sel(self):
         print("You selected the option " + str(self.var.get()))
         self.canvascallbacks["on_change_type"](str(self.var.get()))
+
+    def move_shape(self):
+        pass
 
     def on_select(self,event):
         if self.listbox.curselection():
@@ -338,7 +393,7 @@ class Shape_List_frame(ttk.Frame):
         selected_shape=self.listbox.curselection()
         if(selected_shape):
             index=int(selected_shape[0])
-            shapeid=self.get_shape_id(selected_shape,index)
+            shapeid=self.get_shape_id(index)
             print(shapeid)
             self.canvascallbacks["on_delete_shape"](shapeid)
             self.listbox.delete(index)
@@ -359,64 +414,114 @@ class DrawCanvas(tk.Canvas):
         tk.Canvas.__init__(self,parent,bg="white")
         
         self.callbacks=callbacks
+        self.selectedshape=""
         self.selectedtype=""
         self.canvas_status=False
 
         self.start_x = None
         self.start_y = None
         self.current_shape_item = None
-        
-        self.bind("<Button-1>", self.on_shape_click)
 
-    def on_shape_click(self, event):
 
-        print("on shape pressed")
-        if event.state & 0x4:
-            shape_id = self.find_withtag(tk.CURRENT)
-            if shape_id:
-                shape_id = shape_id[0]
-                print("shape pressed")
-                bbox = self.bbox(shape_id)
-                if self.shape_tags[shape_id]:
-                    self.delete(self.shape_tags[shape_id])
-                self.shape_tags[shape_id] = self.create_rectangle(bbox, outline="black")
 
     def change_draw_type(self,text):
         if text:
             self.selectedtype=text
+            if(self.selectedtype == "edit"):
+                self.toggle_edit()
+            else:
+                self.toggle_draw()
             print("current drawing type is " + str(self.selectedtype))
 
-    def toggle_canvas(self):
+    def change_shape_type(self,text):
+        if text:
+            self.selectedshape=text
+            print("current shape is " + str(self.selectedshape))
+
+    def toggle_draw(self):
         self.canvas_status=True
+
         self.bind("<Button-1>", self.start_draw)
         self.bind("<B1-Motion>", self.draw_shape)
         self.bind("<ButtonRelease-1>", self.stop_draw)
 
+    def toggle_edit(self):
+        self.unbind("<B1-Motion>")
+        self.unbind("<ButtonRelease-1>")
+
+        self.bind("<Button-1>", self.on_shape_click)
+        #self.bind("<B1-Motion>", self.move_shape)
+        #self.bind("<ButtonRelease-1>", self.stop_move)
+
+    def on_shape_click(self, event):
+
+        print("on shape pressed")
+        self.drag_shape_id = self.find_closest(event.x, event.y)[0]
+        if self.drag_shape_id:
+            print("shape pressed")
+            self.draw_shape_bb(self.drag_shape_id)
+            self.start_drag_x,self.start_drag_y=event.x,event.y
+            self.move_x,self.move_y=0,0
+            self.bind("<B1-Motion>", self.move_shape)
+            self.bind("<ButtonRelease-1>", self.stop_move)
+
+    def move_shape(self,event):
+        if self.drag_shape_id:
+            delta_x = event.x - self.start_drag_x
+            delta_y = event.y - self.start_drag_y
+            self.move(self.drag_shape_id,delta_x,delta_y)
+            self.draw_shape_bb(self.drag_shape_id)
+            self.start_drag_x,self.start_drag_y=event.x,event.y
+            self.move_x+=delta_x
+            self.move_y+=delta_y
+
+    def stop_move(self,event):
+        self.callbacks["on_shape_move"](self.drag_shape_id,self.move_x,self.move_y)
+        self.drag_shape_id=None
+
+    def edit_shape(self,Sid,details:list):
+        if Sid and details:
+            print(self.coords(int(Sid)))
+            shapeProperties = details.split(' ')
+            if shapeProperties[0] == "square":
+                coords = shapeProperties[2].split(";")
+                self.coords(int(Sid),float(coords[0]), float(coords[1]), float(coords[6]), float(coords[7]))
+            elif(shapeProperties[0] == "triangle"):
+                coords=shapeProperties[2].split(";")
+                print(coords)
+                self.coords(int(Sid),float(coords[0]), float(coords[1]), float(coords[2]), float(coords[3]),float(coords[4]), float(coords[5]))
+            elif shapeProperties[0] == "circle":
+                radius=shapeProperties[3]
+                Scoords = shapeProperties[2].split(";")
+                Ccoords=self.get_circle_points(radius,Scoords)
+                self.coords(int(Sid),float(Ccoords[0]), float(Ccoords[1]), float(Ccoords[2]), float(Ccoords[3]))
+
+
     def start_draw(self, event):
         self.start_x = event.x
         self.start_y = event.y
-        if self.selectedtype == "rectangle":
+        if self.selectedshape == "rectangle":
             self.current_shape_item = self.create_rectangle(
                 self.start_x, self.start_y, self.start_x, self.start_y, outline="black"
             )
 
-        elif self.selectedtype == "triangle":
+        elif self.selectedshape == "triangle":
             self.current_shape_item=self.create_polygon(
                 self.start_x,self.start_y,self.start_x,self.start_y,self.start_x,self.start_y,outline="black",fill=""
             )
             
-        elif self.selectedtype == "circle":
+        elif self.selectedshape == "circle":
             self.current_shape_item = self.create_oval(
                 self.start_x, self.start_y, self.start_x, self.start_y, outline="black"
             )
 
     def draw_shape(self, event):
         if self.current_shape_item:
-            if(self.selectedtype=="circle"):
+            if(self.selectedshape=="circle"):
                 x= event.x
                 y=(x-self.start_x) + self.start_y
                 self.coords(self.current_shape_item, self.start_x, self.start_y, x, y)
-            elif(self.selectedtype=="triangle"):
+            elif(self.selectedshape=="triangle"):
                 if(event.x > self.start_x):
                     self.coords(self.current_shape_item,self.start_x,self.start_y,event.x,event.y,self.start_x-(event.x-self.start_x),event.y)
                 else:
@@ -427,18 +532,19 @@ class DrawCanvas(tk.Canvas):
     
     def stop_draw(self, event):
         Ccoords=self.coords(self.current_shape_item)
+        shape=""
         print(Ccoords)
-        if(self.selectedtype == "rectangle"):
+        if(self.selectedshape == "rectangle"):
             coords=str(Ccoords[0]) + ";"+str(Ccoords[1]) + ";" + str(Ccoords[2]) + ";" + str(Ccoords[1]) + ";" + str(Ccoords[0])+ ";" + str(Ccoords[3])+ ";" + str(Ccoords[2])+ ";" + str(Ccoords[3])
             shape="square 4 "+ coords
             print(shape)
 
-        elif(self.selectedtype == "triangle"):
+        elif(self.selectedshape == "triangle"):
             coords=str(Ccoords[0]) + ";"+str(Ccoords[1]) + ";" +str(Ccoords[2]) + ";"+str(Ccoords[3]) + ";" +str(Ccoords[4]) + ";"+str(Ccoords[5]) 
             shape="triangle 3 "+coords
             print(shape)
 
-        elif(self.selectedtype=="circle"):
+        elif(self.selectedshape=="circle"):
             print(Ccoords[0])
             print(Ccoords[1])
             print(Ccoords[2])
@@ -484,15 +590,9 @@ class DrawCanvas(tk.Canvas):
 
     def remove_shape(self,Sid):
         if Sid:
-            #self.delete(Sid)
-            if self.find_withtag(Sid):
-                print("shape exists in canvas")
-                self.delete(Sid)
-                if self.find_withtag(Sid):
-                    print("wtf wasnt deleted")
-            self.update_idletasks()
-            self.update()
-            
+            self.delete(Sid)
+            self.delete("bounding_box")
+
     def get_center(self,x1, y1, x2, y2):
         center_x = (x1 + x2) / 2
         center_y = (y1 + y2) / 2
@@ -542,11 +642,13 @@ class GUI(tk.Tk):
         }
 
         self.CanvasHandlers={
-            "on_change_type":self.on_change_draw_type,
+            "on_change_type":self.change_shape_type,
             "on_clear_canvas":self.on_clear_canvas,
             "on_shape_finish":self.send_new_shape,
             "on_delete_shape":self.delete_shape,
-            "on_shape_select":self.select_shape
+            "on_shape_select":self.select_shape,
+            "on_change_draw":self.change_draw_type,
+            "on_shape_move":self.move_shape
         }
 
         # Queue for inter-thread communication
@@ -659,18 +761,21 @@ class GUI(tk.Tk):
         for Sid,details in shape_list.items():
             print(Sid)
             srvShapeId = int(Sid)
-            self.shape_list_widget.Update_listSingle(srvShapeId,details)
+            if(srvShapeId in self.storage_shapes.keys()):
+                self.canvas.edit_shape(self.storage_shapes[srvShapeId],details)
+            else:
+                self.shape_list_widget.Update_listSingle(srvShapeId,details)
 
-            if srvShapeId < 0:
-                srvShapeId = -srvShapeId
-                if srvShapeId in self.storage_shapes.keys():
-                    canvasId = self.storage_shapes.pop(srvShapeId)
-                    print("from remove shape",canvasId)
-                    self.canvas.remove_shape(canvasId)
-                self.update()
-            else:               
-                # canvas may return list of ids
-                self.storage_shapes[srvShapeId] = self.canvas.add_shape(details)
+                if srvShapeId < 0:
+                    srvShapeId = -srvShapeId
+                    if srvShapeId in self.storage_shapes.keys():
+                        canvasId = self.storage_shapes.pop(srvShapeId)
+                        print("from remove shape",canvasId)
+                        self.canvas.remove_shape(canvasId)
+                    self.update()
+                else:               
+                    # canvas may return list of ids
+                    self.storage_shapes[srvShapeId] = self.canvas.add_shape(details)
                 
         print("yes")
                 
@@ -721,7 +826,7 @@ class GUI(tk.Tk):
     def on_join_session(self,sessname):
         if(self.client_socket is not None and sessname):
             self.shape_list_widget.Joined_sess()
-            self.canvas.toggle_canvas()
+            self.canvas.toggle_draw()
             message=','.join(["join_session",sessname])
             self.client_socket.send(message.encode('utf-8'))
         else:
@@ -744,12 +849,31 @@ class GUI(tk.Tk):
         else:
             pass
 
-    def on_change_draw_type(self,draw_type):
+    def change_shape_type(self,shape):
+        if shape:
+            self.canvas.change_shape_type(shape)
+
+    def change_draw_type(self,draw_type):
         if draw_type:
             self.canvas.change_draw_type(draw_type)
+    
+    def move_shape(self,shapeId,moveX,moveY):
+        if shapeId:
+            servId=self.convert_canvas_2serv(shapeId)
+        if (self.client_socket is not None and moveX and moveY and servId):
+            message=",".join(["move_shape",str(servId),str(moveX),str(moveY)])
+            self.client_socket.send(message.encode('utf-8'))
+        else:
+            pass
 
     def on_clear_canvas(self):
         self.canvas.on_clear()
+
+    def convert_canvas_2serv(self,Cid):
+        for key,value in self.storage_shapes.items():
+            if Cid == value :
+                return key
+        print("not found")
 
     def send_new_shape(self,shape):
         if (self.client_socket is not None and shape):
