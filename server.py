@@ -94,6 +94,7 @@ class cClient():
         self.clients = clients
         self.db_manager = db_manager
         self.session=None
+        self.is_connection_live=False
         self.client_thread = threading.Thread(target=self.handle_client)
     
     def Broadcast(self,msg2send,data2send,datatype:str,send2self:bool = False,refresh :bool=False):
@@ -128,9 +129,8 @@ class cClient():
         while True:
             data = self.client_socket.recv(1024)
             if not data:
-                data={'message':"data not sent try again",
-                    "status":"success",
-                    "data":None}
+                break
+
             messagestr=data.decode('utf-8')
             user=messagestr.split(',')
             if(user[0]=="sign_up" or user[0]=="login"):
@@ -182,6 +182,7 @@ class cClient():
                         if(data.get("status")=="success"):
                             jData=json.dumps(data)
                             self.client_socket.sendall(jData.encode('utf-8'))
+                            self.is_connection_live=True
                             break
                         else:
                             jData=json.dumps(data)
@@ -194,10 +195,11 @@ class cClient():
                 self.client_socket.sendall(jData.encode('utf-8'))
         
         #after login while(all general commands)
-        while True:
+        while self.is_connection_live:
             try:
                 data = self.client_socket.recv(1024)
                 if not data:
+                    self.is_connection_live=False
                     break
                 messagestr = data.decode('utf-8')
                 command=messagestr.split(',')
@@ -240,7 +242,7 @@ class cClient():
                         data={"message":"new session created",
                             "status":"success",
                             "data":None}
-                        self.Broadcast("new session created",self.db_manager.Get_Sessions(),datatype="session_list",refresh=True)
+                        self.Broadcast("broadcast updated sessions",self.db_manager.Get_Sessions(),datatype="session_list",refresh=True)
                 
                 #print all registered sessions
                 elif(command[0]=="print_sessions"):
@@ -456,6 +458,7 @@ class cClient():
         print(f"Connection from {self.address} closed")
         self.db_manager.Remove_Active_User(username,self.session)
         self.client_socket.close()
+        self.clients.remove(self)
 
     def start_client_thread(self):
         self.client_thread.start()
