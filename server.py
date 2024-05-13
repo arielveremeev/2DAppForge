@@ -319,6 +319,19 @@ class cClient():
                                 data={"message":"Error",
                                     "status":"fail",
                                     "data":None}
+                elif(command[0]=="list_files"):
+                    if(self.session==None and self.session not in self.Session.keys()):
+                        data={"message":"create session before list files",
+                            "status":"fail",
+                            "data":None}
+                    else:
+                        suffix = ".avsf"
+                        files = [f for f in os.listdir(os.path.abspath(os.path.join(self.workingFolder, "assests"))) if f.endswith(suffix)]
+                        data = {"message": "list of files:",
+                                "status": "success",
+                                "data":{"datatype":"list_files",
+                                    "content":files}
+                                }
                 elif(command[0]=="save_file"):
                     if(len(command[1:]) == 1):
                         ufileName=command[1]

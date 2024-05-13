@@ -130,14 +130,24 @@ class LoadFileDialog(tk.Toplevel):
 
         self.title("Load file")
 
+        self.listbox_frame = tk.Frame(self)
+        self.listbox_frame.pack(expand=True, fill=tk.BOTH)
+
+        self.listbox_scrollbar = tk.Scrollbar(self.listbox_frame)
+        self.listbox_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.listbox = tk.Listbox(self.listbox_frame, height=4, yscrollcommand=self.listbox_scrollbar.set)
+        self.listbox.pack(expand=True, fill=tk.BOTH)
+
+        self.listbox_scrollbar.config(command=self.listbox.yview)
+        self.listbox.bind("<ButtonRelease-1>", self.on_click)
+
         self.file_name = tk.Label(self, text="Enter file name")        
         self.file_name.pack(pady=5)
         self.file_name_text=tk.StringVar()
         self.file_name_text.set("shapes.avsf")
         self.file_name_entry = tk.Entry(self,textvariable=self.file_name_text)
         self.file_name_entry.pack(pady=5)
-
-
         
         self.Open_button = tk.Button(self, text="Open", command=self.on_open)
         self.Open_button.pack(side=tk.LEFT,padx=10, pady=10)
@@ -158,6 +168,15 @@ class LoadFileDialog(tk.Toplevel):
 
     def on_cancel(self):
         self.destroy()
+
+    def on_click(self, event):
+        if self.listbox.curselection():
+            selected_file = self.listbox.get(self.listbox.curselection())
+            self.file_name_text.set(selected_file)
+    def update_list(self,file_list:list):
+        self.listbox.delete(0,tk.END)
+        for item in file_list:
+            self.listbox.insert(tk.END,item)
 
 class SessionListFrame(ttk.Frame):
     def __init__(self,parent,callbacks):
@@ -631,6 +650,7 @@ class GUI(tk.Tk):
             "user_list": self.update_user_list,
             "session_list": self.update_session_list,
             "shape_list": self.update_shape_list,
+            "list_files": self.update_list_files,
             "echo_text":self.update_echo_text
         }
 
@@ -911,11 +931,24 @@ class GUI(tk.Tk):
         self.login_btn.configure(state=tk.ACTIVE)
 
 
-    def load_file(self):
+    def load_file_old(self):
         dialog=LoadFileDialog(self,self.SessionHandlers)
         dialog.grab_set()
         self.wait_window(dialog)
-        
+
+    def load_file(self):
+        self.dialog=LoadFileDialog(self,self.SessionHandlers)
+        if(self.client_socket is not None):
+            message=','.join(["list_files"])
+            self.client_socket.send(message.encode('utf-8'))
+        else:
+            pass
+        self.dialog.grab_set()
+        self.wait_window(self.dialog)
+        self.dialog = None
+    def update_list_files(self,shape_list:dict):
+        if self.dialog is not None:
+            self.dialog.update_list(shape_list)
 
     def save_file(self):
         pass
