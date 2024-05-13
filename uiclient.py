@@ -140,7 +140,7 @@ class LoadFileDialog(tk.Toplevel):
         self.listbox.pack(expand=True, fill=tk.BOTH)
 
         self.listbox_scrollbar.config(command=self.listbox.yview)
-        self.listbox.bind("<ButtonRelease-1>", self.on_click)
+        self.listbox.bind("<<ListboxSelect>>", self.on_select)
 
         self.file_name = tk.Label(self, text="Enter file name")        
         self.file_name.pack(pady=5)
@@ -157,7 +157,10 @@ class LoadFileDialog(tk.Toplevel):
         self.result=None
         self.Open_clicked=False
 
-    def on_open(self):
+        self.bind("<Return>", self.on_open)
+        self.protocol("WM_DELETE_WINDOW", self.on_cancel)
+
+    def on_open(self, event=None):
         name = self.file_name_entry.get()
         print(name)
         if name :
@@ -169,10 +172,11 @@ class LoadFileDialog(tk.Toplevel):
     def on_cancel(self):
         self.destroy()
 
-    def on_click(self, event):
+    def on_select(self, event):
         if self.listbox.curselection():
             selected_file = self.listbox.get(self.listbox.curselection())
             self.file_name_text.set(selected_file)
+    
     def update_list(self,file_list:list):
         self.listbox.delete(0,tk.END)
         for item in file_list:
