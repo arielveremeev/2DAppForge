@@ -21,6 +21,8 @@ jobs:
               run: pyinstaller --onefile client.py
             - name: Build createsert.py
               run: pyinstaller --onefile createsert.py
+            - name: Build createsert.py
+              run: pyinstaller --onefile uiclient.py
             - name: Delete old Windows artifact
               uses: geekyeggo/delete-artifact@v5
               with:
@@ -54,6 +56,8 @@ jobs:
               run: pyinstaller --onefile client.py
             - name: Build Createsert
               run: pyinstaller --onefile createsert.py
+            - name: Build createsert.py
+              run: pyinstaller --onefile uiclient.py
             - name: Delete old Linux artifact
               uses: geekyeggo/delete-artifact@v5
               with:
@@ -81,6 +85,8 @@ jobs:
               run: pyinstaller --onefile client.py            
             - name: Build Createsert
               run: pyinstaller --onefile createsert.py
+            - name: Build createsert.py
+              run: pyinstaller --onefile uiclient.py
             - name: Delete old macos artifact
               uses: geekyeggo/delete-artifact@v5
               with:
