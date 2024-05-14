@@ -328,6 +328,10 @@ class Shape_List_frame(ttk.Frame):
         self.draw_triangle_button.configure(state=tk.DISABLED)
         self.draw_triangle_button.pack(anchor=tk.W)
 
+        self.draw_polygon_button=tk.Radiobutton(self.nav_bar,text="polygon",variable=self.var,value="polygon",command=self.sel)
+        self.draw_polygon_button.configure(state=tk.DISABLED)
+        self.draw_polygon_button.pack(anchor=tk.W)
+
         self.var.set(None)
 
         self.listbox.bind('<<ListboxSelect>>', self.on_select)
@@ -337,6 +341,8 @@ class Shape_List_frame(ttk.Frame):
         self.draw_circle_button.configure(state=tk.ACTIVE)
         self.draw_rectangle_button.configure(state=tk.ACTIVE)
         self.draw_triangle_button.configure(state=tk.ACTIVE)
+        self.draw_polygon_button.configure(state=tk.ACTIVE)
+        self.var.set(None)
 
         self.move_btn.configure(state=tk.DISABLED)
         self.scale_btn.configure(state=tk.DISABLED)
@@ -349,10 +355,12 @@ class Shape_List_frame(ttk.Frame):
         self.draw_circle_button.configure(state=tk.DISABLED)
         self.draw_rectangle_button.configure(state=tk.DISABLED)
         self.draw_triangle_button.configure(state=tk.DISABLED)
+        self.draw_polygon_button.configure(state=tk.DISABLED)
         self.var.set(None)
 
         self.move_btn.configure(state=tk.ACTIVE)
         self.scale_btn.configure(state=tk.ACTIVE)
+        self.edit.set(None)
 
         self.canvascallbacks["on_change_draw"]("edit")
 
@@ -392,6 +400,7 @@ class Shape_List_frame(ttk.Frame):
             self.draw_circle_button.configure(state=tk.ACTIVE)
             self.draw_rectangle_button.configure(state=tk.ACTIVE)
             self.draw_triangle_button.configure(state=tk.ACTIVE)
+            self.draw_polygon_button.configure(state=tk.ACTIVE)
         
 
     def sel(self):
@@ -460,6 +469,17 @@ class DrawCanvas(tk.Canvas):
         if text:
             self.selectedshape=text
             print("current shape is " + str(self.selectedshape))
+            if text == "polygon":
+                self.unbind("<B1-Motion>")
+                self.unbind("<ButtonRelease-1>")
+                self.bind("<Button-1>", self.draw_polygon)
+                self.bind("<Double-Button-1>",self.stop_polygon)
+
+                self.PolyPoints=[]
+                self.polygon=None
+            else:
+                self.toggle_draw()
+            
 
     def toggle_draw(self):
         self.canvas_status=True
@@ -509,17 +529,16 @@ class DrawCanvas(tk.Canvas):
             if shapeProperties[0] == "square":
                 coords = shapeProperties[2].split(";")
                 self.coords(int(Sid),float(coords[0]), float(coords[1]), float(coords[6]), float(coords[7]))
-            elif(shapeProperties[0] == "triangle"):
-                coords=shapeProperties[2].split(";")
-                print(coords)
-                self.coords(int(Sid),float(coords[0]), float(coords[1]), float(coords[2]), float(coords[3]),float(coords[4]), float(coords[5]))
+            elif(shapeProperties[0] == "triangle" or shapeProperties[0] == "polygon"):
+                Scoords=shapeProperties[2].split(";")
+                Fcoords=self.convert_poly_2float(Scoords)
+                self.coords(int(Sid),Fcoords)
             elif shapeProperties[0] == "circle":
                 radius=shapeProperties[3]
                 Scoords = shapeProperties[2].split(";")
                 Ccoords=self.get_circle_points(radius,Scoords)
                 self.coords(int(Sid),float(Ccoords[0]), float(Ccoords[1]), float(Ccoords[2]), float(Ccoords[3]))
-
-
+                
     def start_draw(self, event):
         self.start_x = event.x
         self.start_y = event.y
@@ -563,7 +582,7 @@ class DrawCanvas(tk.Canvas):
             print(shape)
 
         elif(self.selectedshape == "triangle"):
-            coords=str(Ccoords[0]) + ";"+str(Ccoords[1]) + ";" +str(Ccoords[2]) + ";"+str(Ccoords[3]) + ";" +str(Ccoords[4]) + ";"+str(Ccoords[5]) 
+            coords=self.convert_poly_2str(Ccoords)
             shape="triangle 3 "+coords
             print(shape)
 
@@ -580,6 +599,24 @@ class DrawCanvas(tk.Canvas):
         self.delete(self.current_shape_item)
         self.callbacks["on_shape_finish"](shape)
         self.current_shape_item = None
+
+    def draw_polygon(self,event):
+        self.PolyPoints.append((event.x, event.y))
+        self.delete(self.polygon)
+        self.polygon=self.create_polygon(self.PolyPoints,outline="black", fill="")
+        print(self.coords(self.polygon))
+
+    def stop_polygon(self,event):
+        Ccoords=self.coords(self.polygon)
+        coords=self.convert_poly_2str(Ccoords)
+        vertexes=len(self.PolyPoints)
+        shape="polygon" + " " + str(vertexes) + " " + coords 
+        print(shape)
+
+        self.callbacks["on_shape_finish"](shape)
+
+        self.polygon=None
+        self.PolyPoints=[]
 
     def add_shape(self,details)->list:
         shapeProperties = details.split(' ')
@@ -601,6 +638,11 @@ class DrawCanvas(tk.Canvas):
             Ccoords=self.get_circle_points(radius,Scoords)
             current_shape_item = self.create_oval(
                 float(Ccoords[0]), float(Ccoords[1]), float(Ccoords[2]), float(Ccoords[3]), outline="black"
+            )
+        elif shapeProperties[0] == "polygon":
+            coords=self.convert_poly_2float(shapeProperties[2].split(";"))
+            current_shape_item=self.create_polygon(
+                coords,outline="black",fill=""
             )
         print("from add shape",current_shape_item)
         return current_shape_item
@@ -634,6 +676,20 @@ class DrawCanvas(tk.Canvas):
         Ccoords.append(float(Scoords[1]) + radius)
 
         return Ccoords
+    def convert_poly_2float(self,Spoints:list):
+        Fpoints=[]
+        for cord in Spoints:
+            Fpoints.append(float(cord))
+        return Fpoints
+    def convert_poly_2str(self,Fpoints:list):
+        Spoints=""
+        count=0
+        for cord in Fpoints:
+            Spoints+=str(cord)
+            if count < len(Fpoints) -1:
+                Spoints+=";"
+            count+=1
+        return Spoints
 
     def on_clear(self,event):
         self.delete("all")
