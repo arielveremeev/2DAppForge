@@ -72,7 +72,7 @@ class ConnectDialog(tk.Toplevel):
             self.result = (server_ip, username, password)
             self.ok_clicked = True
             self.callback(self.result)
-            self.destroy()
+        self.destroy()
 
     def on_cancel(self):
         self.destroy()
@@ -181,6 +181,42 @@ class LoadFileDialog(tk.Toplevel):
         self.listbox.delete(0,tk.END)
         for item in file_list:
             self.listbox.insert(tk.END,item)
+
+class SaveFileDialog(tk.Toplevel):
+    def __init__(self,parent):
+        super().__init__(parent)
+
+        self.title("save file")
+
+        self.listbox_frame = tk.Frame(self)
+        self.listbox_frame.pack(expand=True, fill=tk.BOTH)
+
+        self.file_name = tk.Label(self, text="Enter file name")        
+        self.file_name.pack(pady=5)
+        self.file_name_entry = tk.Entry(self)
+        self.file_name_entry.pack(pady=5)
+        
+        self.save_button = tk.Button(self, text="save", command=self.on_save)
+        self.save_button.pack(side=tk.LEFT,padx=10, pady=10)
+        self.cancel_button = tk.Button(self, text="Cancel", command=self.on_cancel)
+        self.cancel_button.pack(side=tk.RIGHT,padx=10, pady=10)
+
+        self.result=None
+        self.save_clicked=False
+
+        self.bind("<Return>", self.on_save)
+        self.protocol("WM_DELETE_WINDOW", self.on_cancel)
+
+    def on_save(self, event=None):
+        self.result=self.file_name_entry.get()
+        if self.result :
+            if ".avsf" not in self.result:
+                self.result+=".avsf"
+            self.save_clicked=True
+        self.destroy()
+
+    def on_cancel(self):
+        self.destroy()
 
 class SessionListFrame(ttk.Frame):
     def __init__(self,parent,callbacks):
@@ -613,6 +649,8 @@ class DrawCanvas(tk.Canvas):
         shape="polygon" + " " + str(vertexes) + " " + coords 
         print(shape)
 
+        self.delete(self.polygon)
+
         self.callbacks["on_shape_finish"](shape)
 
         self.polygon=None
@@ -718,7 +756,8 @@ class GUI(tk.Tk):
             "on_create_session":self.on_create_session,
             "on_join_session":self.on_join_session,
             "on_leave_session":self.on_leave_session,
-            "on_load_file":self.on_load_file
+            "on_load_file":self.on_load_file,
+            "on_save_file":self.on_save_file
         }
 
         self.CanvasHandlers={
@@ -763,7 +802,7 @@ class GUI(tk.Tk):
         self.load_btn = tk.Button(self.nav_bar, text="Load File", command=self.load_file)
         self.load_btn.pack(side=tk.RIGHT)
 
-        self.save_btn = tk.Button(self.nav_bar, text="Save File", command=self.save_file)
+        self.save_btn = tk.Button(self.nav_bar, text="Save File", command=self.open_save_file_dialog)
         self.save_btn.pack(side=tk.RIGHT)
         self.nav_bar.pack(side=tk.TOP, fill=tk.X)
 
@@ -831,6 +870,13 @@ class GUI(tk.Tk):
         else:
             self.login_btn.configure(state=tk.NORMAL)
             self.disconnect_btn.configure(state=tk.DISABLED)
+
+    def open_save_file_dialog(self):
+        dialog = SaveFileDialog(self)
+        dialog.grab_set()  # Make the dialog modal
+        self.wait_window(dialog)
+        if dialog.save_clicked:
+            self.on_save_file(dialog.result)
 
     def update_user_list(self,user_list:dict):
         pass
@@ -928,6 +974,13 @@ class GUI(tk.Tk):
             self.client_socket.send(message.encode('utf-8'))
         else:
             pass
+
+    def on_save_file(self,filename):
+        if(self.client_socket is not None and filename):
+            message=','.join(["save_file",filename])
+            self.client_socket.send(message.encode('utf-8'))
+        else:
+            pass 
 
     def change_shape_type(self,shape):
         if shape:
