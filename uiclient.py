@@ -493,6 +493,7 @@ class DrawCanvas(tk.Canvas):
         self.start_x = None
         self.start_y = None
         self.current_shape_item = None
+        self.debug_shapes = []
 
 
 
@@ -544,6 +545,9 @@ class DrawCanvas(tk.Canvas):
     def on_shape_click(self, event):
 
         print("on shape pressed")
+        for shape_id in self.debug_shapes:
+            self.delete(shape_id)
+        self.debug_shapes = []
         self.drag_shape_id = self.find_closest(event.x, event.y)[0]
         if self.drag_shape_id:
             print("shape pressed")
@@ -555,6 +559,7 @@ class DrawCanvas(tk.Canvas):
                 self.bind("<B1-Motion>", self.move_shape)
                 self.bind("<ButtonRelease-1>", self.stop_move)
             elif self.selectededit == "scale_shape":
+                self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
                 self.bind("<MouseWheel>", self.scale_shape)
 
     def move_shape(self,event):
@@ -615,6 +620,55 @@ class DrawCanvas(tk.Canvas):
         avgX=avgX/(count/2)
         avgY=avgY/(count/2)
         return [avgX,avgY]
+    
+    def draw_scale_star3debug(self,Sid):
+        if Sid:
+            coords = self.coords(Sid)
+            center_x,center_y = self.calc_center(coords)
+            canvas_width = self.winfo_width()
+            canvas_height = self.winfo_height()
+            shape_ids = []
+
+            for i in range(0, len(coords), 2):
+                x = coords[i]
+                y = coords[i+1]
+
+                # Calculate the slope of the line
+                if x != center_x:
+                    slope = (y - center_y) / (x - center_x)
+                else:
+                    slope = float('inf')
+
+                # Calculate the y-intercept of the line
+                if slope != float('inf'):
+                    intercept = y - slope * x
+                else:
+                    intercept = float('inf')
+
+                # Calculate the x and y coordinates of the line's intersection with the canvas boundaries
+                if slope != 0:
+                    if x < center_x:
+                        x1 = 0
+                        y1 = intercept
+                        x2 = center_x #canvas_width
+                        y2 = center_y #slope * x2 + intercept
+                    else:
+                        x1 = center_x
+                        y1 = center_y
+                        x2 = canvas_width
+                        y2 = slope * x2 + intercept
+                else:
+                    x1 = x
+                    y1 = 0
+                    x2 = x
+                    y2 = canvas_height
+
+                # Draw the line
+                line_id = self.create_line(x1, y1, x2, y2, fill="green")
+                shape_ids.append(line_id)
+
+            return shape_ids
+        return []
 
 
     def edit_shape(self,Sid,details:list):
@@ -1113,12 +1167,6 @@ class GUI(tk.Tk):
             self.client_socket.close()
         self.disconnect_btn.configure(state=tk.DISABLED)
         self.login_btn.configure(state=tk.ACTIVE)
-
-
-    def load_file_old(self):
-        dialog=LoadFileDialog(self,self.SessionHandlers)
-        dialog.grab_set()
-        self.wait_window(dialog)
 
     def load_file(self):
         self.dialog=LoadFileDialog(self,self.SessionHandlers)
