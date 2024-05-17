@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox, simpledialog
+from tkinter import filedialog
+from PIL import Image, ImageDraw
 import socket
 import ipaddress
 import ssl
@@ -326,11 +328,11 @@ class Shape_List_frame(ttk.Frame):
 
         self.edit=tk.StringVar()
 
-        self.move_btn=tk.Radiobutton(self.nav_bar,text="move shape",variable=self.edit,value="move",command=self.move_shape)
+        self.move_btn=tk.Radiobutton(self.nav_bar,text="move shape",variable=self.edit,value="move_shape",command=self.edit_shape)
         self.move_btn.configure(state=tk.DISABLED)
         self.move_btn.pack(side=tk.RIGHT)
 
-        self.scale_btn=tk.Radiobutton(self.nav_bar,text="scale shape",variable=self.edit,value="scale",command=self.move_shape)
+        self.scale_btn=tk.Radiobutton(self.nav_bar,text="scale shape",variable=self.edit,value="scale_shape",command=self.edit_shape)
         self.scale_btn.configure(state=tk.DISABLED)
         self.scale_btn.pack(side=tk.RIGHT)
 
@@ -443,8 +445,9 @@ class Shape_List_frame(ttk.Frame):
         print("You selected the option " + str(self.var.get()))
         self.canvascallbacks["on_change_type"](str(self.var.get()))
 
-    def move_shape(self):
-        pass
+    def edit_shape(self):
+        print("you selected the option " + str(self.edit.get()))
+        self.canvascallbacks["on_change_edit"](str(self.edit.get()))
 
     def on_select(self,event):
         if self.listbox.curselection():
@@ -484,6 +487,7 @@ class DrawCanvas(tk.Canvas):
         self.callbacks=callbacks
         self.selectedshape=""
         self.selectedtype=""
+        self.selectededit=""
         self.canvas_status=False
 
         self.start_x = None
@@ -515,6 +519,11 @@ class DrawCanvas(tk.Canvas):
                 self.polygon=None
             else:
                 self.toggle_draw()
+
+    def change_edit_type(self,text):
+        if text:
+            self.selectededit=text
+            print("selected edit type is " + self.selectededit)
             
 
     def toggle_draw(self):
@@ -541,8 +550,12 @@ class DrawCanvas(tk.Canvas):
             self.draw_shape_bb(self.drag_shape_id)
             self.start_drag_x,self.start_drag_y=event.x,event.y
             self.move_x,self.move_y=0,0
-            self.bind("<B1-Motion>", self.move_shape)
-            self.bind("<ButtonRelease-1>", self.stop_move)
+            self.start_coords=self.coords(self.drag_shape_id)
+            if self.selectededit == "move_shape":
+                self.bind("<B1-Motion>", self.move_shape)
+                self.bind("<ButtonRelease-1>", self.stop_move)
+            elif self.selectededit == "scale_shape":
+                self.bind("<MouseWheel>", self.scale_shape)
 
     def move_shape(self,event):
         if self.drag_shape_id:
@@ -557,6 +570,52 @@ class DrawCanvas(tk.Canvas):
     def stop_move(self,event):
         self.callbacks["on_shape_move"](self.drag_shape_id,self.move_x,self.move_y)
         self.drag_shape_id=None
+
+    def scale_shape(self,event):
+        if self.drag_shape_id:
+            size =(5*event.delta)/120
+            print(self.size)
+            if len(self.start_coords) == 4:
+                cCoords=self.coords(self.drag_shape_id)
+                self.coords(self.drag_shape_id,cCoords[0] - size, cCoords[1] - size, cCoords[2] + size, cCoords[3] + size)
+            else:
+                avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
+                cCoords=[]
+                count=0
+                for cord in self.coords(self.drag_shape_id):
+                    if count == 0:
+                        if cord > avgX:
+                            cCoords.append(cord+size)
+                        elif cord < avgX:
+                            cCoords.append(cord-size)
+                        elif cord == avgX:
+                            cCoords.append(cord)
+                        count +=1
+                    else:
+                        if cord > avgY:
+                            cCoords.append(cord+size)
+                        elif cord < avgY:
+                            cCoords.append(cord-size)
+                        elif cord == avgY:
+                            cCoords.append(cord)
+                        count -=1
+                self.coords(self.drag_shape_id,cCoords)
+            self.draw_shape_bb(self.drag_shape_id)
+
+
+    def calc_center(self,coords):
+        count=0
+        avgX,avgY=0,0
+        for cord in coords:
+            if count%2==0:
+                avgX+=cord
+            else:
+                avgY+=cord
+            count+=1
+        avgX=avgX/(count/2)
+        avgY=avgY/(count/2)
+        return [avgX,avgY]
+
 
     def edit_shape(self,Sid,details:list):
         if Sid and details:
@@ -767,6 +826,7 @@ class GUI(tk.Tk):
             "on_delete_shape":self.delete_shape,
             "on_shape_select":self.select_shape,
             "on_change_draw":self.change_draw_type,
+            "on_change_edit":self.change_edit_type,
             "on_shape_move":self.move_shape
         }
 
@@ -804,6 +864,10 @@ class GUI(tk.Tk):
 
         self.save_btn = tk.Button(self.nav_bar, text="Save File", command=self.open_save_file_dialog)
         self.save_btn.pack(side=tk.RIGHT)
+        self.nav_bar.pack(side=tk.TOP, fill=tk.X)
+
+        self.export_btn=tk.Button(self.nav_bar, text="export image",command=self.export_image)
+        self.export_btn.pack(side=tk.RIGHT)
         self.nav_bar.pack(side=tk.TOP, fill=tk.X)
 
 
@@ -877,6 +941,9 @@ class GUI(tk.Tk):
         self.wait_window(dialog)
         if dialog.save_clicked:
             self.on_save_file(dialog.result)
+
+    def export_image(self):
+        canvas_image = self.canvas.postscript(file ="dima.ps")
 
     def update_user_list(self,user_list:dict):
         pass
@@ -990,6 +1057,10 @@ class GUI(tk.Tk):
         if draw_type:
             self.canvas.change_draw_type(draw_type)
     
+    def change_edit_type(self,edit_type):
+        if edit_type:
+            self.canvas.change_edit_type(edit_type)
+
     def move_shape(self,shapeId,moveX,moveY):
         if shapeId:
             servId=self.convert_canvas_2serv(shapeId)
