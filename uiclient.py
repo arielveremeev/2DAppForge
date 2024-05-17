@@ -11,7 +11,7 @@ import threading
 import queue
 
 class ConnectDialog(tk.Toplevel):
-    def __init__(self, parent, callback):
+    def __init__(self, parent, default_server_ip, callback):
         super().__init__(parent)
 
         self.callback = callback
@@ -36,7 +36,7 @@ class ConnectDialog(tk.Toplevel):
         self.server_ip_label = tk.Label(self, text="Server IP:")
         self.server_ip_label.grid(row=0, column=0, padx=5, pady=5)
         self.server_ip_text = tk.StringVar() 
-        self.server_ip_text.set("192.168.0.204") 
+        self.server_ip_text.set("127.0.0.1" if default_server_ip is None else default_server_ip) 
         self.server_ip_entry = tk.Entry(self,textvariable=self.server_ip_text)
         self.server_ip_entry.grid(row=0, column=1, padx=5, pady=5)
 
@@ -979,7 +979,8 @@ class GUI(tk.Tk):
         self.send_btn.pack(side=tk.LEFT)
 
     def open_login_dialog(self):
-        dialog = ConnectDialog(self, self.on_connect)
+        local_ip_as_default = socket.gethostbyname(socket.gethostname())
+        dialog = ConnectDialog(self, local_ip_as_default,self.on_connect)
         dialog.grab_set()  # Make the dialog modal
         self.wait_window(dialog)
         if dialog.ok_clicked:
