@@ -10,7 +10,7 @@ import json
 import threading
 import queue
 
-from dialogs import ConnectDialog, CreateSessDialog, LoadFileDialog, SaveFileDialog
+from dialogs import ConnectDialog, LoadFileDialog, SaveFileDialog
 from drawcanvas import DrawCanvas
 from sessionlistframe import SessionListFrame
 from shapelistframe import Shape_List_frame
@@ -252,10 +252,8 @@ class GUI(tk.Tk):
                 receive_thread.start()
                 
                 message=','.join(["login",str(username),str(password)])
-                self.CustomEventsHandlers["event_wait"] = self.getsessionList
-                self.client_socket.send(message.encode('utf-8'))
-                self.client_socket.send(("print_users,all").encode('utf-8'))
-                
+                self.CustomEventsHandlers["event_wait"] = self.after_login
+                self.client_socket.send(message.encode('utf-8'))                                
         else:
             messagebox.showinfo("Connect", "Connection cancelled")
     
@@ -368,16 +366,15 @@ class GUI(tk.Tk):
             self.canvas.draw_shape_bb(self.storage_shapes[servId])
 
 
-    def getsessionList(self,dummy_data):
+    def after_login(self,srv_responce):
         self.CustomEventsHandlers["event_wait"]=None
-        message="print_sessions"
-        print("send print_session")
-        self.client_socket.send(message.encode('utf-8'))
-    def getuserList(self,dummy_data):
-        self.CustomEventsHandlers["event_wait"]=None        
-        message="print_users"
-        print("send print_users")
-        self.client_socket.send(message.encode('utf-8'))
+        if srv_responce["status"] == "success":         
+            self.log_message("login successful")
+            print("send print_session")
+            self.client_socket.send("print_sessions".encode('utf-8'))
+            self.client_socket.send(("print_users,all").encode('utf-8'))
+        else:
+            self.log_message("login failed")
 
     def disconnect_from_server(self):
         if self.client_socket is not None:
@@ -454,11 +451,11 @@ class GUI(tk.Tk):
                 print("Start wait for response")
                 jMessage = self.client_socket.recv(1024).decode('utf-8')
                 if jMessage:
-                    message=json.loads(jMessage)
-                    self.msg_queue.put({"echo_text":message["message"]})
-                    print("event_generate echo ")
+                    message=json.loads(jMessage)                    
                     if (message["data"] is not None):
                         if(self.verbose.get()):
+                            self.msg_queue.put({"echo_text":message["message"]})
+                            print("event_generate echo ")
                             if(type(message["data"]) is dict):
                                 for index in message["data"]:
                                     data=message["data"][index]
@@ -467,8 +464,8 @@ class GUI(tk.Tk):
                             else:
                                 for data in message["data"]:
                                     self.msg_queue.put({"echo_text" : data})
+                        print("event_generate data ")                                    
                         self.msg_queue.put({message["data"]["datatype"]:message["data"]["content"]})
-                        print("event_generate data ")
                 else:
                     self.msg_queue.put({"echo_text":"server disconected"})
                     self.msg_queue.put({"event_wait":None})
@@ -478,7 +475,8 @@ class GUI(tk.Tk):
                     break
 
                 print("before SetEvent")
-                self.msg_queue.put({"event_wait":None})
+                # assume that callback for event_wait if present coresponded exactly to responce from server, sent to callback status of responce
+                self.msg_queue.put({"event_wait":message})
                 self.event_generate("<<Messages2Queue>>")
                 print("after SetEvent")
 
