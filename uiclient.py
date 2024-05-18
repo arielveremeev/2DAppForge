@@ -9,7 +9,7 @@ import ssl
 import json
 import threading
 import queue
-
+import math 
 class ConnectDialog(tk.Toplevel):
     def __init__(self, parent, default_server_ip, callback):
         super().__init__(parent)
@@ -328,15 +328,19 @@ class Shape_List_frame(ttk.Frame):
 
         self.edit=tk.StringVar()
 
-        self.move_btn=tk.Radiobutton(self.nav_bar,text="move shape",variable=self.edit,value="move_shape",command=self.edit_shape)
+        self.move_btn=tk.Radiobutton(self.nav_bar,text="move",variable=self.edit,value="move_shape",command=self.edit_shape)
         self.move_btn.configure(state=tk.DISABLED)
         self.move_btn.pack(side=tk.RIGHT)
 
-        self.scale_btn=tk.Radiobutton(self.nav_bar,text="scale shape",variable=self.edit,value="scale_shape",command=self.edit_shape)
+        self.scale_btn=tk.Radiobutton(self.nav_bar,text="scale",variable=self.edit,value="scale_shape",command=self.edit_shape)
         self.scale_btn.configure(state=tk.DISABLED)
         self.scale_btn.pack(side=tk.RIGHT)
 
-        self.edit.set(None)
+        self.rotate_btn=tk.Radiobutton(self.nav_bar,text="rotate",variable=self.edit,value="rotate_shape",command=self.edit_shape)
+        self.rotate_btn.configure(state=tk.DISABLED)
+        self.rotate_btn.pack(side=tk.RIGHT)
+
+        self.edit.set("move_shape")
 
         self.clear_btn=ttk.Button(self.nav_bar,text="clear canvas",command=self.clear_canvas)
         self.clear_btn.configure(state=tk.DISABLED)
@@ -384,6 +388,7 @@ class Shape_List_frame(ttk.Frame):
 
         self.move_btn.configure(state=tk.DISABLED)
         self.scale_btn.configure(state=tk.DISABLED)
+        self.rotate_btn.configure(state=tk.DISABLED)
         self.edit.set(None)
 
         self.canvascallbacks["on_change_draw"]("draw")
@@ -398,7 +403,8 @@ class Shape_List_frame(ttk.Frame):
 
         self.move_btn.configure(state=tk.ACTIVE)
         self.scale_btn.configure(state=tk.ACTIVE)
-        self.edit.set(None)
+        self.rotate_btn.configure(state=tk.ACTIVE)
+        self.edit.set("move_shape")
 
         self.canvascallbacks["on_change_draw"]("edit")
 
@@ -550,7 +556,7 @@ class DrawCanvas(tk.Canvas):
         self.debug_shapes = []
         self.drag_shape_id = self.find_closest(event.x, event.y)[0]
         if self.drag_shape_id:
-            print("shape pressed")
+            print("shape pressed with :" + self.selectededit)
             self.draw_shape_bb(self.drag_shape_id)
             self.start_drag_x,self.start_drag_y=event.x,event.y
             self.move_x,self.move_y=0,0
@@ -561,6 +567,9 @@ class DrawCanvas(tk.Canvas):
             elif self.selectededit == "scale_shape":
                 self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
                 self.bind("<MouseWheel>", self.scale_shape)
+            elif self.selectededit == "rotate_shape":
+                self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
+                self.bind("<MouseWheel>", self.rotate_shape)
 
     def move_shape(self,event):
         if self.drag_shape_id:
@@ -580,31 +589,51 @@ class DrawCanvas(tk.Canvas):
         if self.drag_shape_id:
             size =(5*event.delta)/120
             print(self.size)
+            cCoords=[]
             if len(self.start_coords) == 4:
                 cCoords=self.coords(self.drag_shape_id)
                 self.coords(self.drag_shape_id,cCoords[0] - size, cCoords[1] - size, cCoords[2] + size, cCoords[3] + size)
             else:
                 avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
-                cCoords=[]
-                count=0
-                for cord in self.coords(self.drag_shape_id):
-                    if count == 0:
-                        if cord > avgX:
-                            cCoords.append(cord+size)
-                        elif cord < avgX:
-                            cCoords.append(cord-size)
-                        elif cord == avgX:
-                            cCoords.append(cord)
-                        count +=1
-                    else:
-                        if cord > avgY:
-                            cCoords.append(cord+size)
-                        elif cord < avgY:
-                            cCoords.append(cord-size)
-                        elif cord == avgY:
-                            cCoords.append(cord)
-                        count -=1
+                scale_factor = 1.01 if size > 0 else 0.99
+                for i in range(0, len(self.coords(self.drag_shape_id)), 2):
+                    x = self.coords(self.drag_shape_id)[i]
+                    y = self.coords(self.drag_shape_id)[i+1]
+
+                    new_x = avgX + (x - avgX) * scale_factor
+                    new_y = avgY + (y - avgY) * scale_factor
+                    cCoords.append(new_x)
+                    cCoords.append(new_y)                
                 self.coords(self.drag_shape_id,cCoords)
+            self.draw_shape_bb(self.drag_shape_id)
+    
+    def rotate_shape(self,event):
+        if self.drag_shape_id:
+            size =(5*event.delta)/120
+            print(self.size)
+            cCoords=[]
+            avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
+            # Convert angle to radians
+            angle_radians = math.radians(1) if size > 0 else math.radians(-1)
+            for i in range(0, len(self.coords(self.drag_shape_id)), 2):
+                x = self.coords(self.drag_shape_id)[i]
+                y = self.coords(self.drag_shape_id)[i+1]
+
+                # Translate point to origin
+                trans_x = x - avgX
+                trans_y = y - avgY
+                
+                # Rotate point
+                new_x = trans_x * math.cos(angle_radians) - trans_y * math.sin(angle_radians)
+                new_y = trans_x * math.sin(angle_radians) + trans_y * math.cos(angle_radians)
+                
+                # Translate point back
+                new_x += avgX
+                new_y += avgY
+
+                cCoords.append(new_x)
+                cCoords.append(new_y)                
+            self.coords(self.drag_shape_id,cCoords)
             self.draw_shape_bb(self.drag_shape_id)
 
 
