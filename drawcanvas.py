@@ -453,4 +453,6 @@ class DrawCanvas(tk.Canvas):
                 draw.ellipse(cCoords, outline="black")
             elif shape_type == "line":
                 draw.line(cCoords, outline="black")
+            elif shape_type == "polygon":
+                draw.polygon(cCoords, outline="black")
         return image
