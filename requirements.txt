@@ -8,3 +8,4 @@ pyinstaller==6.5.0
 pyinstaller-hooks-contrib==2024.3
 pyOpenSSL==24.1.0
 six==1.16.0
+pillow==10.3.0
