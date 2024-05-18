@@ -17,6 +17,7 @@ class cSession():
         self.shapes={}
         self.shapeID=0
         self.filename=None
+        self.locker=threading.Lock()
 
     def FileOpener(self,path):
         file=open(path,'r')
@@ -35,54 +36,60 @@ class cSession():
         return lines
     
     def LoadFile(self,path) -> bool:
-        if os.path.exists(path):
-            lines=self.FileOpener(path)
-            parts=path.split("\\")
-            self.filename=parts[len(parts)-1]
-            for line in lines:
-                self.shapeID+=1
-                self.shapes.update({self.shapeID:CreateShape(line)})
-            return True
-        else:
-            return False
+        with self.locker:
+            if os.path.exists(path):
+                lines=self.FileOpener(path)
+                parts=path.split("\\")
+                self.filename=parts[len(parts)-1]
+                for line in lines:
+                    self.shapeID+=1
+                    self.shapes.update({self.shapeID:CreateShape(line)})
+                return True
+            else:
+                return False
     def DeleteShape(self,ssid) -> dict:
-        SiID=int(ssid)
-        if(SiID in self.shapes.keys()): 
-            deletedShape={-SiID:self.shapes[SiID]}
-            del self.shapes[SiID]
-            return deletedShape
-        return None
+        with self.locker:
+            SiID=int(ssid)
+            if(SiID in self.shapes.keys()): 
+                deletedShape={-SiID:self.shapes[SiID]}
+                del self.shapes[SiID]
+                return deletedShape
+            return None
     
     def AddShape(self,line) ->dict:
-        if(line is not None and type(line) is str):
-            self.shapeID+=1
-            addedShape = {self.shapeID:CreateShape(line)}
-            self.shapes.update(addedShape)
-            return addedShape
-        return None
+        with self.locker:
+            if(line is not None and type(line) is str):
+                self.shapeID+=1
+                addedShape = {self.shapeID:CreateShape(line)}
+                self.shapes.update(addedShape)
+                return addedShape
+            return None
     
     def SaveFile(self,path):
-        file=open(path,'w')
-        for shape in self.shapes.values():
-            file.write(shape.GetString() + '\n')
-        file.close()
-        del self.shapes
-        self.shapes={}
-        self.filename=None
-        return True
+        with self.locker:
+            file=open(path,'w')
+            for shape in self.shapes.values():
+                file.write(shape.GetString() + '\n')
+            file.close()
+            del self.shapes
+            self.shapes={}
+            self.filename=None
+            return True
 
     def MoveShape(self,ssid,Mx:str,My:str) -> dict:
-        SiID=int(ssid)
-        if(self.shapes[SiID]is not None):
-            self.shapes[SiID].MoveShape(float(Mx),float(My))
-            return {SiID:self.shapes[SiID]}
-        return None
+        with self.locker:
+            SiID=int(ssid)
+            if(self.shapes[SiID]is not None):
+                self.shapes[SiID].MoveShape(float(Mx),float(My))
+                return {SiID:self.shapes[SiID]}
+            return None
     def ScaleShape(self,ssid,Sx:str,Sy:str) -> dict:
-        SiID=int(ssid)
-        if(self.shapes[SiID]is not None):
-            self.shapes[SiID].ScaleShape(float(Sx),float(Sy))
-            return {SiID:self.shapes[SiID]}
-        return None
+        with self.locker:
+            SiID=int(ssid)
+            if(self.shapes[SiID]is not None):
+                self.shapes[SiID].ScaleShape(float(Sx),float(Sy))
+                return {SiID:self.shapes[SiID]}
+            return None
 
 
 class cClient():
@@ -95,7 +102,16 @@ class cClient():
         self.db_manager = db_manager
         self.session=None
         self.is_connection_live=False
+        self.lock = threading.Lock()
         self.client_thread = threading.Thread(target=self.handle_client)
+
+    def __del__(self):
+        self.client_socket.close()
+
+    def safe_send(self, data):
+        with self.lock:
+            self.client_socket.send(data)
+
     
     def Broadcast(self,msg2send,data2send,datatype:str,send2self:bool = False,refresh :bool=False):
         """ possible/awaited data types:
@@ -115,10 +131,10 @@ class cClient():
         for c in self.clients:
             if(refresh):
                 if(c.session is None):
-                    c.client_socket.send(jData.encode('utf-8'))
+                    c.safe_send(jData.encode('utf-8'))
             else:
                 if(self.session == c.session and (self.client_socket != c.client_socket or send2self==True)):
-                    c.client_socket.send(jData.encode('utf-8'))
+                    c.safe_send(jData.encode('utf-8'))
         
 
 
