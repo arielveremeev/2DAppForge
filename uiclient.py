@@ -1250,7 +1250,11 @@ class GUI(tk.Tk):
             self.log_message("verbose turned off")
 
     def send_command(self):
-        pass
+        message=self.command_entry.get()
+        if message:
+            self.client_socket.send(message.encode('utf-8'))
+            self.command_entry.delete(0,tk.END)
+
 
     def event_wait(self):
         pass
