@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox, simpledialog
 from tkinter import filedialog
-#from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw
 import socket
 import ipaddress
 import ssl
@@ -908,7 +908,41 @@ class DrawCanvas(tk.Canvas):
 
     def on_clear(self,event):
         self.delete("all")
+    def CretaeSceenShotOfDraws(self):
+        ''' Create a screenshot of the current canvas by redrswing all the shapes on a new PIL.Image and returning it
+        '''
+        # canvas_image = self.canvas.postscript(file ="dima.ps")
+        
+        all_shapes = self.find_all()
+        
+        min_x = float("inf")
+        min_y = float("inf")
+        max_x = float("-inf")
+        max_y = float("-inf")
+        for shape_id in all_shapes:
+            bbox = self.bbox(shape_id)
+            min_x = min(min_x, bbox[0])
+            min_y = min(min_y, bbox[1])
+            max_x = max(max_x, bbox[2])
+            max_y = max(max_y, bbox[3])
+        # the output image size is 10% more that boundix box of all shapes
+        image = Image.new("RGB", (int((max_x - min_x) * 1.1), int((max_y - min_y) * 1.1)), "white")
+        draw = ImageDraw.Draw(image)
 
+        min_x *= 0.9
+        min_y *= 0.9
+        
+        for shape_id in all_shapes:
+            shape_type = self.type(shape_id)
+            cCoords=self.coords(shape_id)
+            cCoords = [cCoords[i] - min_x if i % 2 == 0 else cCoords[i] - min_y for i in range(len(cCoords))]
+            if shape_type == "rectangle":
+                draw.rectangle(cCoords, outline="black")
+            elif shape_type == "oval":
+                draw.ellipse(cCoords, outline="black")
+            elif shape_type == "line":
+                draw.line(cCoords, outline="black")
+        return image
 
 class GUI(tk.Tk):
     def __init__(self):
@@ -1076,7 +1110,14 @@ class GUI(tk.Tk):
             self.on_save_file(dialog.result)
 
     def export_image(self):
-        canvas_image = self.canvas.postscript(file ="dima.ps")
+        '''open FileDialog with tkinter to save the image'''
+        filetypes = [("PNG files", "*.png"), ("All files", "*")]
+        filename = filedialog.asksaveasfilename(title="Save image as...", filetypes=filetypes)
+        if filename:
+            if not filename.endswith(".png"):
+                filename += ".png"
+            image = self.canvas.CretaeSceenShotOfDraws()
+            image.save(filename)
 
     def update_user_list(self,user_list):
         if user_list:
