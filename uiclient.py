@@ -9,6 +9,7 @@ import ssl
 import json
 import threading
 import queue
+import math
 
 class ConnectDialog(tk.Toplevel):
     def __init__(self, parent, default_server_ip, callback):
@@ -328,13 +329,17 @@ class Shape_List_frame(ttk.Frame):
 
         self.edit=tk.StringVar()
 
-        self.move_btn=tk.Radiobutton(self.nav_bar,text="move shape",variable=self.edit,value="move_shape",command=self.edit_shape)
+        self.move_btn=tk.Radiobutton(self.nav_bar,text="move",variable=self.edit,value="move_shape",command=self.edit_shape)
         self.move_btn.configure(state=tk.DISABLED)
         self.move_btn.pack(side=tk.RIGHT)
 
-        self.scale_btn=tk.Radiobutton(self.nav_bar,text="scale shape",variable=self.edit,value="scale_shape",command=self.edit_shape)
+        self.scale_btn=tk.Radiobutton(self.nav_bar,text="scale",variable=self.edit,value="scale_shape",command=self.edit_shape)
         self.scale_btn.configure(state=tk.DISABLED)
         self.scale_btn.pack(side=tk.RIGHT)
+
+        self.rotate_btn=tk.Radiobutton(self.nav_bar,text="rotate",variable=self.edit,value="rotate_shape",command=self.edit_shape)
+        self.rotate_btn.configure(state=tk.DISABLED)
+        self.rotate_btn.pack(side=tk.RIGHT)
 
         self.edit.set(None)
 
@@ -349,10 +354,6 @@ class Shape_List_frame(ttk.Frame):
 
 
         self.var=tk.StringVar()
-
-        self.draw_freehand_button=tk.Radiobutton(self.nav_bar,text="freehand",variable=self.var,value="freehand",command=self.sel)
-        self.draw_freehand_button.configure(state=tk.DISABLED)
-        self.draw_freehand_button.pack(anchor=tk.W)
 
         self.draw_circle_button=tk.Radiobutton(self.nav_bar,text="circle",variable=self.var,value="circle",command=self.sel)
         self.draw_circle_button.configure(state=tk.DISABLED)
@@ -375,7 +376,6 @@ class Shape_List_frame(ttk.Frame):
         self.listbox.bind('<<ListboxSelect>>', self.on_select)
 
     def toggle_draw(self):
-        self.draw_freehand_button.configure(state=tk.ACTIVE)
         self.draw_circle_button.configure(state=tk.ACTIVE)
         self.draw_rectangle_button.configure(state=tk.ACTIVE)
         self.draw_triangle_button.configure(state=tk.ACTIVE)
@@ -384,12 +384,12 @@ class Shape_List_frame(ttk.Frame):
 
         self.move_btn.configure(state=tk.DISABLED)
         self.scale_btn.configure(state=tk.DISABLED)
+        self.rotate_btn.configure(state=tk.DISABLED)
         self.edit.set(None)
 
         self.canvascallbacks["on_change_draw"]("draw")
 
     def toggle_edit(self):
-        self.draw_freehand_button.configure(state=tk.DISABLED)
         self.draw_circle_button.configure(state=tk.DISABLED)
         self.draw_rectangle_button.configure(state=tk.DISABLED)
         self.draw_triangle_button.configure(state=tk.DISABLED)
@@ -398,6 +398,7 @@ class Shape_List_frame(ttk.Frame):
 
         self.move_btn.configure(state=tk.ACTIVE)
         self.scale_btn.configure(state=tk.ACTIVE)
+        self.rotate_btn.configure(state=tk.ACTIVE)
         self.edit.set(None)
 
         self.canvascallbacks["on_change_draw"]("edit")
@@ -561,6 +562,9 @@ class DrawCanvas(tk.Canvas):
             elif self.selectededit == "scale_shape":
                 self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
                 self.bind("<MouseWheel>", self.scale_shape)
+            elif self.selectededit == "rotate_shape":
+                self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
+                self.bind("<MouseWheel>", self.rotate_shape)
 
     def move_shape(self,event):
         if self.drag_shape_id:
@@ -585,27 +589,59 @@ class DrawCanvas(tk.Canvas):
                 self.coords(self.drag_shape_id,cCoords[0] - size, cCoords[1] - size, cCoords[2] + size, cCoords[3] + size)
             else:
                 avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
+                newX,newY=None,None
+                coords=self.coords(self.drag_shape_id)
                 cCoords=[]
-                count=0
-                for cord in self.coords(self.drag_shape_id):
-                    if count == 0:
-                        if cord > avgX:
-                            cCoords.append(cord+size)
-                        elif cord < avgX:
-                            cCoords.append(cord-size)
-                        elif cord == avgX:
-                            cCoords.append(cord)
-                        count +=1
+                for i in range(0,len(self.coords(self.drag_shape_id)),2):
+                    x=coords[i]
+                    y=coords[i+1]
+                    dir_x = x - avgX
+                    dir_y = y - avgY
+                    if event.delta > 0:
+                        newX = avgX + dir_x * 1.05
+                        newY = avgY + dir_y * 1.05
                     else:
-                        if cord > avgY:
-                            cCoords.append(cord+size)
-                        elif cord < avgY:
-                            cCoords.append(cord-size)
-                        elif cord == avgY:
-                            cCoords.append(cord)
-                        count -=1
+                        newX = avgX + dir_x * 0.95
+                        newY = avgY + dir_y * 0.95
+                    cCoords.append(newX)
+                    cCoords.append(newY)
                 self.coords(self.drag_shape_id,cCoords)
             self.draw_shape_bb(self.drag_shape_id)
+
+    def rotate_shape(self,event):
+        if self.drag_shape_id:
+            angle=5 if event.delta > 0 else -5
+            avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
+            cCoords=[]
+            # Convert the angle from degrees to radians
+            angle_rad = math.radians(angle)
+            
+            # Create a new list for the rotated vertices
+            rotated_vertices = []
+            for i in range(0, len(self.coords(self.drag_shape_id)), 2):
+                x = self.coords(self.drag_shape_id)[i]
+                y = self.coords(self.drag_shape_id)[i + 1]
+                
+                # Calculate the position relative to the center
+                rel_x = x - avgX
+                rel_y = y - avgY
+                
+                # Apply the rotation transformation
+                new_rel_x = rel_x * math.cos(angle_rad) - rel_y * math.sin(angle_rad)
+                new_rel_y = rel_x * math.sin(angle_rad) + rel_y * math.cos(angle_rad)
+                
+                # Calculate the new vertex position
+                new_x = avgX + new_rel_x
+                new_y = avgY + new_rel_y
+                
+                # Append the new vertex to the rotated vertices list
+                cCoords.append(new_x)
+                cCoords.append(new_y)
+
+                
+            self.coords(self.drag_shape_id,cCoords)
+            self.draw_shape_bb(self.drag_shape_id)
+
 
 
     def calc_center(self,coords):
@@ -615,7 +651,7 @@ class DrawCanvas(tk.Canvas):
             if count%2==0:
                 avgX+=cord
             else:
-                avgY+=cord
+                avgY+= cord
             count+=1
         avgX=avgX/(count/2)
         avgY=avgY/(count/2)
