@@ -506,6 +506,7 @@ class DrawCanvas(tk.Canvas):
         self.current_shape_item = None
         self.debug_shapes = []
         self.aggregate=1.0
+        self.aggregate_angle=0
 
 
 
@@ -631,14 +632,16 @@ class DrawCanvas(tk.Canvas):
 
     def rotate_shape(self,event):
         if self.drag_shape_id:
-            self.angle=5 if event.delta > 0 else -5
+            angle=5 if event.delta > 0 else -5
             avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
             cCoords=[]
             # Convert the angle from degrees to radians
-            angle_rad = math.radians(self.angle)
+            angle_rad = math.radians(angle)
             
             # Create a new list for the rotated vertices
             rotated_vertices = []
+
+            self.aggregate_angle+=angle
             for i in range(0, len(self.coords(self.drag_shape_id)), 2):
                 x = self.coords(self.drag_shape_id)[i]
                 y = self.coords(self.drag_shape_id)[i + 1]
@@ -663,8 +666,10 @@ class DrawCanvas(tk.Canvas):
             self.coords(self.drag_shape_id,cCoords)
             self.draw_shape_bb(self.drag_shape_id)
 
-    def send_rotate(self):
-        self.callbacks["on_shape_scale"](self.drag_shape_id,self.angle)
+    def send_rotate(self,event):
+        print(self.aggregate)
+        self.callbacks["on_shape_rotate"](self.drag_shape_id,self.aggregate_angle)
+        self.aggregate_angle=0
         self.drag_shape_id=None
 
     def calc_center(self,coords):
@@ -942,7 +947,8 @@ class GUI(tk.Tk):
             "on_change_draw":self.change_draw_type,
             "on_change_edit":self.change_edit_type,
             "on_shape_move":self.move_shape,
-            "on_shape_scale":self.scale_shape
+            "on_shape_scale":self.scale_shape,
+            "on_shape_rotate":self.rotate_shape
         }
 
         # Queue for inter-thread communication
@@ -1209,6 +1215,14 @@ class GUI(tk.Tk):
             servId=self.convert_canvas_2serv(shapeId)
         if (self.client_socket is not None and scale_factor and servId):
             message=",".join(["scale_shape",str(servId),str(scale_factor)])
+            self.client_socket.send(message.encode('utf-8'))
+        else:
+            pass
+    def rotate_shape(self,shapeId,rotate_factor):
+        if shapeId:
+            servId=self.convert_canvas_2serv(shapeId)
+        if (self.client_socket is not None and rotate_factor and servId):
+            message=",".join(["rotate_shape",str(servId),str(rotate_factor)])
             self.client_socket.send(message.encode('utf-8'))
         else:
             pass
