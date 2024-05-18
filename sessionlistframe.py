@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-
+from dialogs import CreateSessDialog
 class SessionListFrame(ttk.Frame):
     def __init__(self,parent,callbacks):
         ttk.Frame.__init__(self, parent)
