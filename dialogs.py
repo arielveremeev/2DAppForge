@@ -15,8 +15,8 @@ class ConnectDialog(tk.Toplevel):
         parent_height = parent.winfo_height()
 
         # Calculate the position of the dialog to be in the center of the main window
-        dialog_width = 200
-        dialog_height = 150
+        dialog_width = 300
+        dialog_height = 200
         dialog_pos_x = parent_pos_x + (parent_width - dialog_width) // 2
         dialog_pos_y = parent_pos_y + (parent_height - dialog_height) // 2
 
@@ -25,37 +25,39 @@ class ConnectDialog(tk.Toplevel):
 
         self.server_ip_label = tk.Label(self, text="Server IP:")
         self.server_ip_label.grid(row=0, column=0, padx=5, pady=5)
-        self.server_ip_text = tk.StringVar() 
-        self.server_ip_text.set("127.0.0.1" if default_server_ip is None else default_server_ip) 
-        self.server_ip_entry = tk.Entry(self,textvariable=self.server_ip_text)
+        self.server_ip_text = tk.StringVar()
+        self.server_ip_text.set("127.0.0.1" if default_server_ip is None else default_server_ip)
+        self.server_ip_entry = tk.Entry(self, textvariable=self.server_ip_text)
         self.server_ip_entry.grid(row=0, column=1, padx=5, pady=5)
 
         self.username_label = tk.Label(self, text="Username:")
         self.username_label.grid(row=1, column=0, padx=5, pady=5)
-        self.username_text = tk.StringVar() 
-        self.username_text.set("ariel") 
-        self.username_entry = tk.Entry(self,textvariable=self.username_text)
+        self.username_text = tk.StringVar()
+        self.username_text.set("ariel")
+        self.username_entry = tk.Entry(self, textvariable=self.username_text)
         self.username_entry.grid(row=1, column=1, padx=5, pady=5)
 
         self.password_label = tk.Label(self, text="Password:")
         self.password_label.grid(row=2, column=0, padx=5, pady=5)
-        self.password_text = tk.StringVar() 
+        self.password_text = tk.StringVar()
         self.password_text.set("1234")
-        self.password_entry = tk.Entry(self, show="*",textvariable=self.password_text)
+        self.password_entry = tk.Entry(self, show="*", textvariable=self.password_text)
         self.password_entry.grid(row=2, column=1, padx=5, pady=5)
 
-        self.ok_button = tk.Button(self, text="OK", command=self.on_ok)
-        self.ok_button.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+        # Create the buttons and place them on the same row
+        self.login_button = tk.Button(self, text="Login", command=lambda: self.on_ok(True))
+        self.login_button.grid(row=3, column=0, padx=5, pady=5)
+
+        self.signup_button = tk.Button(self, text="Sign Up", command=lambda: self.on_ok(False))
+        self.signup_button.grid(row=3, column=1, padx=5, pady=5)
 
         self.cancel_button = tk.Button(self, text="Cancel", command=self.on_cancel)
-        self.cancel_button.grid(row=3, column=1, columnspan=2, padx=5, pady=5)
+        self.cancel_button.grid(row=3, column=2, padx=5, pady=5)
 
         self.result = None
         self.ok_clicked = False
-        #self.center_window()
 
-
-    def on_ok(self):
+    def on_ok(self, is_login):
         server_ip = self.server_ip_entry.get()
         username = self.username_entry.get()
         password = self.password_entry.get()
@@ -63,7 +65,7 @@ class ConnectDialog(tk.Toplevel):
         if server_ip and username and password:
             self.result = (server_ip, username, password)
             self.ok_clicked = True
-            self.callback(self.result)
+            self.callback(self.result, is_login)
         self.destroy()
 
     def on_cancel(self):
