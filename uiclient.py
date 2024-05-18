@@ -231,11 +231,17 @@ class SessionListFrame(ttk.Frame):
 
         self.label=ttk.Label(self,text="session list")
         self.label.pack(side=tk.TOP)
-        
+
+        self.scrollbar=tk.Scrollbar(self,orient=tk.VERTICAL)
+        self.scrollbar.pack(side=tk.RIGHT,fill=tk.Y)
+
         self.listbox=tk.Listbox(self)
         self.listbox.pack(expand=True,fill=tk.BOTH)
         self.listbox.bind("<ButtonRelease-1>", self.on_select)
         self.listbox.bind("<Double-Button-1>", self.on_double_click)
+
+        self.listbox.config(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.config(command=self.listbox.yview)
 
         self.nav_bar = ttk.Frame(self)
         self.nav_bar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -307,10 +313,15 @@ class Shape_List_frame(ttk.Frame):
 
         self.label=ttk.Label(self,text="shape list")
         self.label.pack(side=tk.TOP)
-        
+
+        self.scrollbar=tk.Scrollbar(self,orient=tk.VERTICAL)
+        self.scrollbar.pack(side=tk.RIGHT,fill=tk.Y)
+
         self.listbox=tk.Listbox(self)
         self.listbox.pack(expand=True,fill=tk.BOTH)
-        #self.listbox.bind("<ButtonRelease-1>", self.on_select)
+
+        self.listbox.configure(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.configure(command=self.listbox.yview)
 
         self.nav_bar = ttk.Frame(self)
         self.nav_bar.pack(side=tk.BOTTOM, fill=tk.X)
@@ -435,7 +446,6 @@ class Shape_List_frame(ttk.Frame):
             self.draw_mode_button.configure(state=tk.ACTIVE)
             self.edit_mode_button.configure(state=tk.ACTIVE)
             self.clear_btn.configure(state=tk.ACTIVE)
-            self.draw_freehand_button.configure(state=tk.ACTIVE)
             self.draw_circle_button.configure(state=tk.ACTIVE)
             self.draw_rectangle_button.configure(state=tk.ACTIVE)
             self.draw_triangle_button.configure(state=tk.ACTIVE)
@@ -966,10 +976,16 @@ class GUI(tk.Tk):
         self.main_frame.pack(expand=True, fill=tk.BOTH)
 
         self.main_left_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
+
+        self.user_list_scrollbar=tk.Scrollbar(self.main_left_frame,orient=tk.VERTICAL)
+        self.user_list_scrollbar.pack(side=tk.LEFT,fill=tk.Y)
+
         self.user_list_label=tk.Label(self.main_left_frame,text="user list")
         self.user_list_label.pack(side=tk.TOP)
         self.user_list=tk.Listbox(self.main_left_frame)
         self.user_list.pack(expand=True,fill=tk.BOTH)
+        self.user_list.configure(yscrollcommand=self.user_list_scrollbar.set)
+        self.user_list_scrollbar.configure(command=self.user_list.yview)
         self.main_left_frame.pack(side=tk.LEFT,fill=tk.Y)
         
         self.rightnotebook=ttk.Notebook(self.main_frame)
@@ -998,8 +1014,13 @@ class GUI(tk.Tk):
         self.command_frame = tk.Frame(self)
         self.command_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
+        self.response_log_scrollbar=tk.Scrollbar(self.command_frame,orient=tk.VERTICAL)
+        self.response_log_scrollbar.pack(side=tk.RIGHT,fill=tk.Y)
+
         self.response_log=tk.Text(self.command_frame , state="disabled" , wrap="word",height=5)
         self.response_log.pack(fill="x",expand=True)
+        self.response_log.configure(yscrollcommand=self.response_log_scrollbar.set)
+        self.response_log_scrollbar.configure(command=self.response_log.yview)
 
         self.command_label = tk.Label(self.command_frame, text="Command:")
         self.command_label.pack(side=tk.LEFT)
