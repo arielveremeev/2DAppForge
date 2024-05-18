@@ -1,4 +1,5 @@
 import json
+import math
 
 class Shape():
     def __init__(self,line):
@@ -6,7 +7,8 @@ class Shape():
         print(parameters)
         self.name=parameters[0]
         self.vertexes=parameters[1]
-        self.points=self.SetPoints(parameters[2])
+        self.center = Point(0,0)
+        self.SetPoints(parameters[2])
         self.color="black"
 
     def __str__(self) -> str:
@@ -14,12 +16,16 @@ class Shape():
 
     def SetPoints(self,line):
         coordinates=line.split(";")
-        points=[]
+        self.points=[]
+        avgX,avgY=0,0
         for i in range (0,len(coordinates),2):
             x=coordinates[i]
             y=coordinates[i+1]
-            points.append(Point(x,y))
-        return points
+            avgX+=float(x)
+            avgY+=float(y)
+            self.points.append(Point(x,y))
+        numberOfVertexes = len (self.points)
+        self.center = Point(avgX/numberOfVertexes,avgY/numberOfVertexes)
 
     def PrintPoints(self):
         for point in self.points:
@@ -41,10 +47,27 @@ class Shape():
         for point in self.points:
             point.x+=Mx
             point.y+=My
-    def ScaleShape(self,Sx : float,Sy : float):
+    def ScaleShape(self,Sf : float):
+        ''' scale factor is a float value representing the scale factor in percentage around center of the shape'''        
         for point in self.points:
-            point.x*=Sx
-            point.y*=Sy
+            point.x = self.center.x + (point.x - self.center.x) * Sf
+            point.y = self.center.y + (point.y - self.center.y) * Sf
+    def RotateShape(self,rotate_angle : float):
+        ''' rotate angle is a float value representing the angle in degrees around center of the shape'''        
+        # Convert the angle from degrees to radians
+        angle_rad = math.radians(rotate_angle)
+        for point in self.points:
+            # Calculate the position relative to the center
+            rel_x = point.x - self.center.x
+            rel_y = point.y - self.center.y
+            
+            # Apply the rotation transformation
+            new_rel_x = rel_x * math.cos(angle_rad) - rel_y * math.sin(angle_rad)
+            new_rel_y = rel_x * math.sin(angle_rad) + rel_y * math.cos(angle_rad)
+            
+            # Calculate the new vertex position
+            point.x = self.center.x + new_rel_x
+            point.y = self.center.y + new_rel_y
             
 
 class Point():
@@ -81,8 +104,8 @@ class Circle(Shape):
         pointS=pointS[:-1]
         string=self.name + " " + self.vertexes + " " + pointS + " " +str(self.radius)
         return string
-    def ScaleShape(self,Sx : float,Sy : float):
-        self.radius*=Sx
+    def ScaleShape(self,Sf : float):
+        self.radius*=Sf
     
 
 
