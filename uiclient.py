@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox, simpledialog
 from tkinter import filedialog
-from PIL import Image, ImageDraw
+#from PIL import Image, ImageDraw
 import socket
 import ipaddress
 import ssl
