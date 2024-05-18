@@ -167,13 +167,8 @@ class GUI(tk.Tk):
         local_ip_as_default = socket.gethostbyname(socket.gethostname())
         dialog = ConnectDialog(self, local_ip_as_default,self.on_connect)
         dialog.grab_set()  # Make the dialog modal
-        self.wait_window(dialog)
-        if dialog.ok_clicked:
-            self.login_btn.configure(state=tk.DISABLED)
-            self.disconnect_btn.configure(state=tk.ACTIVE)
-        else:
-            self.login_btn.configure(state=tk.NORMAL)
-            self.disconnect_btn.configure(state=tk.DISABLED)
+        self.wait_window(dialog)        
+            
 
     def open_save_file_dialog(self):
         dialog = SaveFileDialog(self)
@@ -373,14 +368,21 @@ class GUI(tk.Tk):
             print("send print_session")
             self.client_socket.send("print_sessions".encode('utf-8'))
             self.client_socket.send(("print_users,all").encode('utf-8'))
+            self.login_btn.configure(state=tk.DISABLED)
+            self.disconnect_btn.configure(state=tk.ACTIVE)
         else:
             self.log_message("login failed")
+            self.login_btn.configure(state=tk.NORMAL)
+            self.disconnect_btn.configure(state=tk.DISABLED)
 
     def disconnect_from_server(self):
         if self.client_socket is not None:
             self.client_socket.close()
         self.disconnect_btn.configure(state=tk.DISABLED)
         self.login_btn.configure(state=tk.ACTIVE)
+        self.user_list.delete(0,tk.END)
+        self.session_list_widget.Update_list({})
+        self.shape_list_widget.ListClear()
 
     def load_file(self):
         self.dialog=LoadFileDialog(self,self.SessionHandlers)

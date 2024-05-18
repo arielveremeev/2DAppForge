@@ -136,6 +136,7 @@ class Shape_List_frame(ttk.Frame):
                 shape= '[{:-5}] {}'.format(int(srvShapeId),Sdetails[0])
             self.listbox.insert(tk.END,shape)
     def ListClear(self):
+        # Clear the listbox and reset all widgets to disabled set us not in session
         self.listbox.delete(0,tk.END)
 
     def Joined_sess(self):
