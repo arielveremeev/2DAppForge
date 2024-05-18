@@ -136,8 +136,13 @@ class DatabaseManager:
 
 
     def Session_users(self,sessname):
-        users=self.cursor.execute("SELECT username FROM active_session_users WHERE session = (?)",(sessname,))
-        return users
+        cursor=self.cursor.execute("SELECT username FROM active_session_users WHERE session = (?)",(sessname,))
+        Users=[]
+        for usr in cursor:
+            print(usr[0])
+            Users.append(usr[0])
+
+        return Users
 
     def PrintUsers(self):
         #print all current registered users in the database

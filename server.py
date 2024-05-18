@@ -100,6 +100,7 @@ class cClient():
         self.address = address
         self.clients = clients
         self.db_manager = db_manager
+        self.username=""
         self.session=None
         self.is_connection_live=False
         self.lock = threading.Lock()
@@ -156,17 +157,17 @@ class cClient():
                             "status":"fail",
                             "data":None}
                     else:
-                        username = user[1]
+                        self.username = user[1]
                         password = user[2]
-                        print(username)
+                        print(self.username)
                         print(password)
-                        if(self.db_manager.IfExists(username)==True):
+                        if(self.db_manager.IfExists(self.username)==True):
                             print(f"user already exists")
                             data={'message':"username in use or doesnt exist",
                             "status":"fail",
                             "data":None}
                         else:
-                            self.db_manager.insert_user(username,password)
+                            self.db_manager.insert_user(self.username,password)
                             data={'message':"successfully added user now please login using the same info",
                             "status":"success",
                             "data":None}
@@ -179,15 +180,15 @@ class cClient():
                             "status":"fail",
                             "data":None}
                     else:
-                        username = user[1]
+                        self.username = user[1]
                         password = user[2]
-                        print(username)
+                        print(self.username)
                         print(password)
-                        if(self.db_manager.IfExists(username)==False):
+                        if(self.db_manager.IfExists(self.username)==False):
                             data={"message":"user doesnt exist",
                                 "status":"fail",
                                 "data":None}
-                        elif(ValidateLogin(username,password,self.db_manager)==True):
+                        elif(ValidateLogin(self.username,password,self.db_manager)==True):
                             data={"message":"succesfull login from"+ str(self.address),
                                     "status":"success",
                                     "data":None}
@@ -199,6 +200,7 @@ class cClient():
                             jData=json.dumps(data)
                             self.client_socket.sendall(jData.encode('utf-8'))
                             self.is_connection_live=True
+                            password=""
                             break
                         else:
                             jData=json.dumps(data)
@@ -240,14 +242,23 @@ class cClient():
                 #printing all users registered in the databse
                 elif(command[0]=="print_users"):
                     #db_manager.PrintUsers()
-                    Users=self.db_manager.GetUsers()
+                    Users=[]
+                    if command[1] == "all":
+                        for client in self.clients:
+                            Users.append(client.username)
+                    elif command[1] == "session":
+                        if self.session:
+                            Users=self.db_manager.Session_users(self.session)
+                    self.Broadcast(msg2send="users are :",data2send=Users,datatype="user_list",send2self=False)
                     data={"message":"users are : ",
                         "status":"success",
-                        "data":Users}
+                        "data":{"datatype":"user_list",
+                                "content":Users}
+                         }
                 #create a new session
                 elif(command[0]=="create_session"):
                     session=command[1:]
-                    session.append(username)
+                    session.append(self.username)
                     sessname=session[0]
                     if(self.db_manager.Create_Session(session)==False):
                         data={"message":"session not created, session with this name already exists",
@@ -276,9 +287,9 @@ class cClient():
                         "data":None}
                     if(self.session==None):
                         if(self.db_manager.Does_Sess_Exist(sessname)==True):
-                            if(self.db_manager.Is_User_in_sess(username,sessname)==False):
+                            if(self.db_manager.Is_User_in_sess(self.username,sessname)==False):
                                 if(self.db_manager.Can_Join(sessname)==True):
-                                    self.db_manager.Insert_Active_User(username,sessname)
+                                    self.db_manager.Insert_Active_User(self.username,sessname)
                                     self.session=sessname
                                     data["message"]="successfully joined session"
                                     data["status"]="success"
@@ -303,8 +314,8 @@ class cClient():
                         data["message"]="user isnt in a session"
                     else:
                         if(self.db_manager.Does_Sess_Exist(sessname)==True):
-                            if(self.db_manager.Is_User_in_sess(username,sessname)==True):
-                                self.db_manager.Remove_Active_User(username,sessname)
+                            if(self.db_manager.Is_User_in_sess(self.username,sessname)==True):
+                                self.db_manager.Remove_Active_User(self.username,sessname)
                                 self.session=None
                                 data["message"]="removed user from session"
                                 data["status"]="success"
@@ -485,7 +496,7 @@ class cClient():
                 break
 
         print(f"Connection from {self.address} closed")
-        self.db_manager.Remove_Active_User(username,self.session)
+        self.db_manager.Remove_Active_User(self.username,self.session)
         self.client_socket.close()
         self.clients.remove(self)
 
