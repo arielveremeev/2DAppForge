@@ -901,6 +901,7 @@ class GUI(tk.Tk):
         self.threads=[]
         self.client_socket=None
         self.verbose=tk.BooleanVar()
+        self.in_sess=False
 
         self.CustomEventsHandlers = {
             "event_wait":None,
@@ -1134,6 +1135,7 @@ class GUI(tk.Tk):
             self.canvas.toggle_draw()
             message=','.join(["join_session",sessname])
             self.client_socket.send(message.encode('utf-8'))
+            self.in_sess=True
         else:
             pass
 
@@ -1252,11 +1254,10 @@ class GUI(tk.Tk):
     def send_command(self):
         text=self.command_entry.get()
         if text:
-            if text.startswith("all"):
-                message=','.join([text[:len("all")],text[len("all")-1:]])
+            if self.in_sess:
+                message=','.join(["all",text])
             else:
                 message=text
-            print(message)
             self.client_socket.send(message.encode('utf-8'))
             self.command_entry.delete(0,tk.END)
 
