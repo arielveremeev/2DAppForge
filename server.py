@@ -76,27 +76,30 @@ class cSession():
             self.filename=None
             return True
 
-    def MoveShape(self,ssid,Mx:str,My:str) -> dict:
-        with self.locker:
-            SiID=int(ssid)
-            if(self.shapes[SiID]is not None):
-                self.shapes[SiID].MoveShape(float(Mx),float(My))
-                return {SiID:self.shapes[SiID]}
-            return None
-    def ScaleShape(self,ssid,Sf:str) -> dict:
-        with self.locker:
-            SiID=int(ssid)
-            if(self.shapes[SiID]is not None):
-                self.shapes[SiID].ScaleShape(float(Sf))
-                return {SiID:self.shapes[SiID]}
-            return None
-    def RotateShape(self,ssid,ra:str) -> dict:
-        with self.locker:
-            SiID=int(ssid)
-            if(self.shapes[SiID]is not None):
-                self.shapes[SiID].RotateShape(float(ra))
-                return {SiID:self.shapes[SiID]}
-            return None
+    def shape_operation(func):
+        def wrapper(self, ssid, *args):
+            with self.locker:
+                SiID = int(ssid)
+                if self.shapes[SiID] is not None:
+                    result = func(self, SiID, *args)
+                    return {SiID: self.shapes[SiID]} if result else None
+                return None
+        return wrapper
+
+    @shape_operation
+    def MoveShape(self, ssid, Mx:str, My:str) -> dict:
+        self.shapes[ssid].MoveShape(float(Mx), float(My))
+        return True
+
+    @shape_operation
+    def ScaleShape(self, ssid, Sf:str) -> dict:
+        self.shapes[ssid].ScaleShape(float(Sf))
+        return True
+
+    @shape_operation
+    def RotateShape(self, ssid, ra:str) -> dict:
+        self.shapes[ssid].RotateShape(float(ra))
+        return True
 
 
 class cClient():
