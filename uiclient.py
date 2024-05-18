@@ -1058,8 +1058,10 @@ class GUI(tk.Tk):
     def export_image(self):
         canvas_image = self.canvas.postscript(file ="dima.ps")
 
-    def update_user_list(self,user_list:dict):
-        pass
+    def update_user_list(self,user_list):
+        if user_list:
+            for user in user_list:
+                self.user_list.insert(tk.END,user)
     def update_session_list(self,session_list:dict):
         self.session_list_widget.Update_list(session_list)
 
@@ -1116,6 +1118,7 @@ class GUI(tk.Tk):
                 message=','.join(["login",str(username),str(password)])
                 self.CustomEventsHandlers["event_wait"] = self.getsessionList
                 self.client_socket.send(message.encode('utf-8'))
+                self.client_socket.send(("print_users").encode('utf-8'))
                 
         else:
             messagebox.showinfo("Connect", "Connection cancelled")
