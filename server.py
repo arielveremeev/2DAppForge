@@ -83,11 +83,18 @@ class cSession():
                 self.shapes[SiID].MoveShape(float(Mx),float(My))
                 return {SiID:self.shapes[SiID]}
             return None
-    def ScaleShape(self,ssid,Sx:str,Sy:str) -> dict:
+    def ScaleShape(self,ssid,Sf:str) -> dict:
         with self.locker:
             SiID=int(ssid)
             if(self.shapes[SiID]is not None):
-                self.shapes[SiID].ScaleShape(float(Sx),float(Sy))
+                self.shapes[SiID].ScaleShape(float(Sf))
+                return {SiID:self.shapes[SiID]}
+            return None
+    def RotateShape(self,ssid,ra:str) -> dict:
+        with self.locker:
+            SiID=int(ssid)
+            if(self.shapes[SiID]is not None):
+                self.shapes[SiID].RotateShape(float(ra))
                 return {SiID:self.shapes[SiID]}
             return None
 
@@ -463,8 +470,8 @@ class cClient():
                             "status":"fail",
                             "data":None}  
                     else:
-                        if(len(command[1:]) == 3):
-                            changeShape=self.Session[self.session].ScaleShape(command[1],command[2],command[3])
+                        if(len(command[1:]) == 2):
+                            changeShape=self.Session[self.session].ScaleShape(command[1],command[2])
                             if(changeShape is not None):
                                 data={"message":"scale shape",
                                       "status":"success",
@@ -478,6 +485,27 @@ class cClient():
                             data={"message":"missing arguments",
                                       "status":"fail",
                                       "data":None}    
+                elif(command[0]=="rotate_shape"):
+                    if(self.session==None and self.session not in self.Session.keys()):
+                        data={"message":"cannot rotate shapes if not in session",
+                            "status":"fail",
+                            "data":None}  
+                    else:
+                        if(len(command[1:]) == 2):
+                            changeShape=self.Session[self.session].RotateShape(command[1],command[2])
+                            if(changeShape is not None):
+                                data={"message":"rotate shape",
+                                      "status":"success",
+                                      "data":None}  
+                                self.Broadcast(None,changeShape,datatype="shape_list",send2self=True)
+                            else:
+                                data={"message":"error",
+                                      "status":"fail",
+                                      "data":None}
+                        else:
+                            data={"message":"missing arguments",
+                                      "status":"fail",
+                                      "data":None}
                               
 
 
