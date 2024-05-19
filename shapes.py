@@ -27,6 +27,15 @@ class Shape():
         numberOfVertexes = len (self.points)
         self.center = Point(avgX/numberOfVertexes,avgY/numberOfVertexes)
 
+    def UpdateCenter(self):
+        avgX,avgY=0,0
+        for vertex in self.points:
+            avgX += vertex.x
+            avgY += vertex.y
+        numberOfVertexes = len (self.points)
+        self.center = Point(avgX/numberOfVertexes,avgY/numberOfVertexes)
+
+
     def PrintPoints(self):
         for point in self.points:
             print(point)
@@ -47,6 +56,7 @@ class Shape():
         for point in self.points:
             point.x+=Mx
             point.y+=My
+        self.UpdateCenter()
     def ScaleShape(self,Sf : float):
         ''' scale factor is a float value representing the scale factor in percentage around center of the shape'''        
         for point in self.points:
@@ -56,6 +66,7 @@ class Shape():
         ''' rotate angle is a float value representing the angle in degrees around center of the shape'''        
         # Convert the angle from degrees to radians
         angle_rad = math.radians(rotate_angle)
+        print (f"Shape rotate center [{self.center.x},{self.center.y}]")
         for point in self.points:
             # Calculate the position relative to the center
             rel_x = point.x - self.center.x
