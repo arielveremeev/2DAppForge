@@ -63,9 +63,8 @@ class DrawCanvas(tk.Canvas):
         self.unbind("<B1-Motion>")
         self.unbind("<ButtonRelease-1>")
 
-        self.bind("<Button-1>", self.on_shape_click)
-        #self.bind("<B1-Motion>", self.move_shape)
-        #self.bind("<ButtonRelease-1>", self.stop_move)
+        self.bind("<ButtonRelease-1>", self.on_shape_click)
+       
 
     def on_shape_click(self, event):
 
@@ -73,6 +72,7 @@ class DrawCanvas(tk.Canvas):
         for shape_id in self.debug_shapes:
             self.delete(shape_id)
         self.debug_shapes = []
+        
         shapes_found = self.find_closest(event.x, event.y)
         if len(shapes_found) > 0:
             self.drag_shape_id = shapes_found[0]
@@ -111,7 +111,6 @@ class DrawCanvas(tk.Canvas):
     def scale_shape(self,event):
         if self.drag_shape_id is not None:
             size =(5*event.delta)/120
-            print(self.size)
             if len(self.start_coords) == 4:
                 cCoords=self.coords(self.drag_shape_id)
                 self.coords(self.drag_shape_id,cCoords[0] - size, cCoords[1] - size, cCoords[2] + size, cCoords[3] + size)
@@ -123,6 +122,8 @@ class DrawCanvas(tk.Canvas):
                 cCoords=[]
                 scale_factor = 1.05 if event.delta > 0 else 0.95
                 self.aggregate =self.aggregate * scale_factor
+                print("aggregate",self.aggregate)
+                    
                 for i in range(0,len(self.coords(self.drag_shape_id)),2):
                     x=coords[i]
                     y=coords[i+1]
@@ -132,7 +133,6 @@ class DrawCanvas(tk.Canvas):
                     newX = avgX + dir_x * scale_factor
                     newY = avgY + dir_y * scale_factor
 
-                    print("aggregate",self.aggregate)
                     cCoords.append(newX)
                     cCoords.append(newY)
                 self.coords(self.drag_shape_id,cCoords)
@@ -287,7 +287,7 @@ class DrawCanvas(tk.Canvas):
             )
 
     def draw_shape(self, event):
-        if self.current_shape_item:
+        if self.current_shape_item is not None:
             if(self.selectedshape=="circle"):
                 x= event.x
                 y=(x-self.start_x) + self.start_y
@@ -302,31 +302,32 @@ class DrawCanvas(tk.Canvas):
                 self.coords(self.current_shape_item, self.start_x, self.start_y, x, y)
     
     def stop_draw(self, event):
-        Ccoords=self.coords(self.current_shape_item)
-        shape=""
-        print(Ccoords)
-        if(self.selectedshape == "rectangle"):
-            coords=str(Ccoords[0]) + ";"+str(Ccoords[1]) + ";" + str(Ccoords[2]) + ";" + str(Ccoords[1]) + ";" + str(Ccoords[0])+ ";" + str(Ccoords[3])+ ";" + str(Ccoords[2])+ ";" + str(Ccoords[3])
-            shape="square 4 "+ coords
-            print(shape)
+        if self.current_shape_item is not None:
+            Ccoords=self.coords(self.current_shape_item)
+            shape=""
+            print(Ccoords)
+            if(self.selectedshape == "rectangle"):
+                coords=str(Ccoords[0]) + ";"+str(Ccoords[1]) + ";" + str(Ccoords[2]) + ";" + str(Ccoords[1]) + ";" + str(Ccoords[0])+ ";" + str(Ccoords[3])+ ";" + str(Ccoords[2])+ ";" + str(Ccoords[3])
+                shape="square 4 "+ coords
+                print(shape)
 
-        elif(self.selectedshape == "triangle"):
-            coords=self.convert_poly_2str(Ccoords)
-            shape="triangle 3 "+coords
-            print(shape)
+            elif(self.selectedshape == "triangle"):
+                coords=self.convert_poly_2str(Ccoords)
+                shape="triangle 3 "+coords
+                print(shape)
 
-        elif(self.selectedshape=="circle"):
-            print(Ccoords[0])
-            print(Ccoords[1])
-            print(Ccoords[2])
-            print(Ccoords[3])
-            center=self.get_center(Ccoords[0],Ccoords[1],Ccoords[2],Ccoords[3])
-            radius=self.get_radius(Ccoords[ 0],Ccoords[2])
-            CenCord=str(center[0]) + ";" + str(center[1])
-            shape="circle 1 " + str(CenCord) + " " + str(radius)
+            elif(self.selectedshape=="circle"):
+                print(Ccoords[0])
+                print(Ccoords[1])
+                print(Ccoords[2])
+                print(Ccoords[3])
+                center=self.get_center(Ccoords[0],Ccoords[1],Ccoords[2],Ccoords[3])
+                radius=self.get_radius(Ccoords[ 0],Ccoords[2])
+                CenCord=str(center[0]) + ";" + str(center[1])
+                shape="circle 1 " + str(CenCord) + " " + str(radius)
 
-        self.delete(self.current_shape_item)
-        self.callbacks["on_shape_finish"](shape)
+            self.delete(self.current_shape_item)
+            self.callbacks["on_shape_finish"](shape)
         self.current_shape_item = None
 
     def draw_polygon(self,event):
