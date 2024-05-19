@@ -50,20 +50,34 @@ class DrawCanvas(tk.Canvas):
         if text:
             self.selectededit=text
             print("selected edit type is " + self.selectededit)
+            self.unbind("<B1-Motion>")
+            self.unbind("<ButtonRelease-1>")
+            self.unbind("<MouseWheel>")
+            self.unbind("<Double-Button-1>")
+            
+            if self.selectededit == "move_shape":
+                self.bind("<B1-Motion>", self.move_shape)
+                self.bind("<ButtonRelease-1>", self.stop_move)
+            elif self.selectededit == "scale_shape":
+                self.bind("<MouseWheel>", self.scale_shape)
+                self.bind("<Double-Button-1>",self.send_scale)
+            elif self.selectededit == "rotate_shape":
+                self.bind("<MouseWheel>", self.rotate_shape)
+                self.bind("<Double-Button-1>",self.send_rotate)
             
 
     def toggle_draw(self):
         self.canvas_status=True
-
         self.bind("<Button-1>", self.start_draw)
         self.bind("<B1-Motion>", self.draw_shape)
         self.bind("<ButtonRelease-1>", self.stop_draw)
 
+        self.selectededit=None
+
     def toggle_edit(self):
         self.unbind("<B1-Motion>")
         self.unbind("<ButtonRelease-1>")
-
-        self.bind("<ButtonRelease-1>", self.on_shape_click)
+        self.bind("<Button-1>", self.on_shape_click)
        
 
     def on_shape_click(self, event):
@@ -73,6 +87,10 @@ class DrawCanvas(tk.Canvas):
             self.delete(shape_id)
         self.debug_shapes = []
         
+        bbox_id = self.find_withtag("bounding_box")
+        bbox_id = bbox_id[0] if (len(bbox_id) > 0) else None
+        debug_ids = self.find_withtag("debug_shapes")
+            
         shapes_found = self.find_closest(event.x, event.y)
         if len(shapes_found) > 0:
             self.drag_shape_id = shapes_found[0]
@@ -82,17 +100,10 @@ class DrawCanvas(tk.Canvas):
                 self.start_drag_x,self.start_drag_y=event.x,event.y
                 self.move_x,self.move_y=0,0
                 self.start_coords=self.coords(self.drag_shape_id)
-                if self.selectededit == "move_shape":
-                    self.bind("<B1-Motion>", self.move_shape)
-                    self.bind("<ButtonRelease-1>", self.stop_move)
-                elif self.selectededit == "scale_shape":
-                    self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
-                    self.bind("<MouseWheel>", self.scale_shape)
-                    self.bind('<Double-Button-1>',self.send_scale)
-                elif self.selectededit == "rotate_shape":
-                    self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
-                    self.bind("<MouseWheel>", self.rotate_shape)
-                    self.bind('<Double-Button-1>',self.send_rotate)
+                self.draw_scale_star3debug(self.drag_shape_id)
+                
+                
+    
 
     def move_shape(self,event):
         if self.drag_shape_id is not None:
@@ -105,7 +116,8 @@ class DrawCanvas(tk.Canvas):
             self.move_y+=delta_y
 
     def stop_move(self,event):
-        self.callbacks["on_shape_move"](self.drag_shape_id,self.move_x,self.move_y)
+        if self.drag_shape_id is not None:
+            self.callbacks["on_shape_move"](self.drag_shape_id,self.move_x,self.move_y)
         self.drag_shape_id=None
 
     def scale_shape(self,event):
@@ -139,8 +151,8 @@ class DrawCanvas(tk.Canvas):
             self.draw_shape_bb(self.drag_shape_id)
 
     def send_scale(self,event):
-        print(self.aggregate)
         if self.drag_shape_id is not None:
+            print(self.aggregate)
             self.callbacks["on_shape_scale"](self.drag_shape_id,self.aggregate)
         self.aggregate=1.0
         self.drag_shape_id=None
@@ -177,13 +189,14 @@ class DrawCanvas(tk.Canvas):
                 cCoords.append(new_x)
                 cCoords.append(new_y)
 
-                
+            print (f"from rotate on canvas [{avgX},{avgY}]:",cCoords)
             self.coords(self.drag_shape_id,cCoords)
             self.draw_shape_bb(self.drag_shape_id)
+            self.draw_scale_star3debug(self.drag_shape_id)
 
     def send_rotate(self,event):
-        print(self.aggregate)
         if self.drag_shape_id is not None:
+            print(self.aggregate)        
             self.callbacks["on_shape_rotate"](self.drag_shape_id,self.aggregate_angle)
         self.aggregate_angle=0
         self.drag_shape_id=None
@@ -207,7 +220,10 @@ class DrawCanvas(tk.Canvas):
             center_x,center_y = self.calc_center(coords)
             canvas_width = self.winfo_width()
             canvas_height = self.winfo_height()
-            shape_ids = []
+            for shape_id in self.debug_shapes:
+                self.delete(shape_id)
+            self.debug_shapes = []
+        
 
             for i in range(0, len(coords), 2):
                 x = coords[i]
@@ -244,16 +260,15 @@ class DrawCanvas(tk.Canvas):
                     y2 = canvas_height
 
                 # Draw the line
-                line_id = self.create_line(x1, y1, x2, y2, fill="green")
-                shape_ids.append(line_id)
+                line_id = self.create_line(x1, y1, x2, y2, fill="green",tags="debug_shapes")
+                self.debug_shapes.append(line_id)
 
-            return shape_ids
-        return []
 
 
     def edit_shape(self,Sid,details:list):
         if Sid and details:
-            print(self.coords(int(Sid)))
+            print("drawcanvas::edit_shape:: coords from canvas",self.coords(int(Sid)))
+            print("drawcanvas::edit_shape:: coords from server",details)
             shapeProperties = details.split(' ')
             if shapeProperties[0] == "square":
                 coords = shapeProperties[2].split(";")
@@ -425,6 +440,7 @@ class DrawCanvas(tk.Canvas):
 
     def on_clear(self,event):
         self.delete("all")
+
     def CretaeSceenShotOfDraws(self):
         ''' Create a screenshot of the current canvas by redrswing all the shapes on a new PIL.Image and returning it
         '''
