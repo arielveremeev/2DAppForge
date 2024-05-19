@@ -198,7 +198,7 @@ class GUI(tk.Tk):
 
     def update_shape_list(self,shape_list:dict):
         for Sid,details in shape_list.items():
-            print(Sid)
+            print("GUI::update_shape_list:: server shape id",Sid)
             srvShapeId = int(Sid)
             if(srvShapeId in self.storage_shapes.keys()):
                 self.canvas.edit_shape(self.storage_shapes[srvShapeId],details)
@@ -341,7 +341,7 @@ class GUI(tk.Tk):
             pass
 
     def on_clear_canvas(self):
-        self.canvas.on_clear()
+        self.canvas.on_clear(None)
 
     def convert_canvas_2serv(self,Cid):
         for key,value in self.storage_shapes.items():
@@ -387,9 +387,10 @@ class GUI(tk.Tk):
         if srv_responce["status"] == "success":
             self.log_message("sign up successful you can login")
         else:
-            self.client_socket.close()
-            self.client_socket=None
-            self.log_message("sign up failed")            
+            self.log_message("sign up failed")  
+        #socket always closes after sign_up for login to be separate
+        self.client_socket.close()
+        self.client_socket=None          
 
     def disconnect_from_server(self):
         if self.client_socket is not None:
@@ -467,14 +468,13 @@ class GUI(tk.Tk):
         while True:
             try:
                 # Receive message from server
-                print("Start wait for response")
                 jMessage = self.client_socket.recv(1024).decode('utf-8')
                 if jMessage:
                     message=json.loads(jMessage)                    
-                    if (message["data"] is not None):
+                    if(self.verbose.get()):
+                        self.msg_queue.put({"echo_text":message["message"]})
+                    if (message["data"] is not None):                        
                         if(self.verbose.get()):
-                            self.msg_queue.put({"echo_text":message["message"]})
-                            print("event_generate echo ")
                             if(type(message["data"]) is dict):
                                 for index in message["data"]:
                                     data=message["data"][index]
@@ -483,7 +483,6 @@ class GUI(tk.Tk):
                             else:
                                 for data in message["data"]:
                                     self.msg_queue.put({"echo_text" : data})
-                        print("event_generate data ")                                    
                         self.msg_queue.put({message["data"]["datatype"]:message["data"]["content"]})
                 else:
                     self.msg_queue.put({"echo_text":"server disconected"})
@@ -493,11 +492,9 @@ class GUI(tk.Tk):
                     self.client_socket = None
                     break
 
-                print("before SetEvent")
                 # assume that callback for event_wait if present coresponded exactly to responce from server, sent to callback status of responce
                 self.msg_queue.put({"event_wait":message})
                 self.event_generate("<<Messages2Queue>>")
-                print("after SetEvent")
 
             except Exception as e:
                 print("Error receiving message:", e)

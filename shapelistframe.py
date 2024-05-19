@@ -187,5 +187,9 @@ class Shape_List_frame(ttk.Frame):
         return int(shapeid)
 
     def clear_canvas(self):
-        self.canvascallbacks["on_clear_canvas"]
+        for index in range(self.listbox.size()):
+            srvShapeId = self.get_shape_id(index)
+            self.canvascallbacks["on_delete_shape"](srvShapeId)
+        self.listbox.delete(0,tk.END)
+        self.canvascallbacks["on_clear_canvas"]()
 
