@@ -16,6 +16,7 @@ class DrawCanvas(tk.Canvas):
         self.start_y = None
         self.current_shape_item = None
         self.debug_shapes = []
+        self.drag_shape_id = None
         self.aggregate=1.0
         self.aggregate_angle=0
 
@@ -72,27 +73,29 @@ class DrawCanvas(tk.Canvas):
         for shape_id in self.debug_shapes:
             self.delete(shape_id)
         self.debug_shapes = []
-        self.drag_shape_id = self.find_closest(event.x, event.y)[0]
-        if self.drag_shape_id:
-            print("shape pressed")
-            self.draw_shape_bb(self.drag_shape_id)
-            self.start_drag_x,self.start_drag_y=event.x,event.y
-            self.move_x,self.move_y=0,0
-            self.start_coords=self.coords(self.drag_shape_id)
-            if self.selectededit == "move_shape":
-                self.bind("<B1-Motion>", self.move_shape)
-                self.bind("<ButtonRelease-1>", self.stop_move)
-            elif self.selectededit == "scale_shape":
-                self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
-                self.bind("<MouseWheel>", self.scale_shape)
-                self.bind('<Double-Button-1>',self.send_scale)
-            elif self.selectededit == "rotate_shape":
-                self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
-                self.bind("<MouseWheel>", self.rotate_shape)
-                self.bind('<Double-Button-1>',self.send_rotate)
+        shapes_found = self.find_closest(event.x, event.y)
+        if len(shapes_found) > 0:
+            self.drag_shape_id = shapes_found[0]
+            if self.drag_shape_id:
+                print("shape pressed")
+                self.draw_shape_bb(self.drag_shape_id)
+                self.start_drag_x,self.start_drag_y=event.x,event.y
+                self.move_x,self.move_y=0,0
+                self.start_coords=self.coords(self.drag_shape_id)
+                if self.selectededit == "move_shape":
+                    self.bind("<B1-Motion>", self.move_shape)
+                    self.bind("<ButtonRelease-1>", self.stop_move)
+                elif self.selectededit == "scale_shape":
+                    self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
+                    self.bind("<MouseWheel>", self.scale_shape)
+                    self.bind('<Double-Button-1>',self.send_scale)
+                elif self.selectededit == "rotate_shape":
+                    self.debug_shapes = self.draw_scale_star3debug(self.drag_shape_id)
+                    self.bind("<MouseWheel>", self.rotate_shape)
+                    self.bind('<Double-Button-1>',self.send_rotate)
 
     def move_shape(self,event):
-        if self.drag_shape_id:
+        if self.drag_shape_id is not None:
             delta_x = event.x - self.start_drag_x
             delta_y = event.y - self.start_drag_y
             self.move(self.drag_shape_id,delta_x,delta_y)
@@ -106,7 +109,7 @@ class DrawCanvas(tk.Canvas):
         self.drag_shape_id=None
 
     def scale_shape(self,event):
-        if self.drag_shape_id:
+        if self.drag_shape_id is not None:
             size =(5*event.delta)/120
             print(self.size)
             if len(self.start_coords) == 4:
@@ -137,12 +140,13 @@ class DrawCanvas(tk.Canvas):
 
     def send_scale(self,event):
         print(self.aggregate)
-        self.callbacks["on_shape_scale"](self.drag_shape_id,self.aggregate)
+        if self.drag_shape_id is not None:
+            self.callbacks["on_shape_scale"](self.drag_shape_id,self.aggregate)
         self.aggregate=1.0
         self.drag_shape_id=None
 
     def rotate_shape(self,event):
-        if self.drag_shape_id:
+        if self.drag_shape_id is not None:
             angle=5 if event.delta > 0 else -5
             avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
             cCoords=[]
@@ -179,7 +183,8 @@ class DrawCanvas(tk.Canvas):
 
     def send_rotate(self,event):
         print(self.aggregate)
-        self.callbacks["on_shape_rotate"](self.drag_shape_id,self.aggregate_angle)
+        if self.drag_shape_id is not None:
+            self.callbacks["on_shape_rotate"](self.drag_shape_id,self.aggregate_angle)
         self.aggregate_angle=0
         self.drag_shape_id=None
 
