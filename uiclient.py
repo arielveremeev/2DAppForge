@@ -254,7 +254,7 @@ class GUI(tk.Tk):
                     message=','.join(["sign_up",str(username),str(password)])
                     self.CustomEventsHandlers["event_wait"] = self.after_sign_up
                     self.client_socket.send(message.encode('utf-8'))                                
-                    
+                
         else:
             messagebox.showinfo("Connect", "Connection cancelled")
     
@@ -377,6 +377,8 @@ class GUI(tk.Tk):
             self.login_btn.configure(state=tk.DISABLED)
             self.disconnect_btn.configure(state=tk.ACTIVE)
         else:
+            self.client_socket.close()
+            self.client_socket=None
             self.log_message("login failed")
             self.login_btn.configure(state=tk.NORMAL)
             self.disconnect_btn.configure(state=tk.DISABLED)
@@ -385,6 +387,8 @@ class GUI(tk.Tk):
         if srv_responce["status"] == "success":
             self.log_message("sign up successful you can login")
         else:
+            self.client_socket.close()
+            self.client_socket=None
             self.log_message("sign up failed")            
 
     def disconnect_from_server(self):
