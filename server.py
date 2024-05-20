@@ -234,6 +234,7 @@ class cClient():
                 if len(command)==0:
                     continue
                 #message broadcasting
+                print("recived command ",command[0])
                 if "all" == command[0]:
                     print("contains all")
                     if(self.session!=None):
@@ -242,7 +243,9 @@ class cClient():
                                 "status":"fail",
                                 "data":None}
                         else:
-                            self.Broadcast(' '.join(command[1:]),None,datatype="echo_text")
+                            msg="[" + self.username + "]" + ' '.join(command[1:])
+                            print(msg)
+                            self.Broadcast(None,msg,datatype="msg_broadcast",send2self=True)
                             continue
                         
                     else:
@@ -441,7 +444,7 @@ class cClient():
                             data={"message":"shape added",
                                 "status":"success",
                                 "data":None}
-                            self.Broadcast(None,addedShape,datatype="shape_list",send2self=True)
+                            self.Broadcast("Broadcast Add Shape",addedShape,datatype="shape_list",send2self=True)
                         else:
                             data={"message":"not added",
                                 "status":"fail",
@@ -568,8 +571,8 @@ def main():
     while True:
         client_socket, address = server_socket.accept()
         print("Accepted connection from", address)
-        ssl_client_socket = context.wrap_socket(client_socket, server_side=True)
-        client=cClient(ssl_client_socket,address,clients,db_manager)
+        #ssl_client_socket = context.wrap_socket(client_socket, server_side=True)
+        client=cClient(client_socket,address,clients,db_manager)
         clients.append(client)
 
         client.start_client_thread()

@@ -34,7 +34,8 @@ class GUI(tk.Tk):
             "session_list": self.update_session_list,
             "shape_list": self.update_shape_list,
             "list_files": self.update_list_files,
-            "echo_text":self.update_echo_text
+            "echo_text":self.update_echo_text,
+            "msg_broadcast":self.update_echo_text
         }
 
         self.SessionHandlers={
@@ -238,7 +239,8 @@ class GUI(tk.Tk):
 
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client_socket.connect((str(server_ip), port))
-                self.client_socket =  context.wrap_socket(client_socket, server_hostname=str(server_ip))
+                self.client_socket=client_socket
+                #self.client_socket =  context.wrap_socket(client_socket, server_hostname=str(server_ip))
 
                 self.response_event=threading.Event()
 
