@@ -1,7 +1,48 @@
 import sqlite3
 import bcrypt
 from datetime import date
+import re
+from functools import wraps
 
+
+def detect_sql_injection(param):
+    """
+    Detects potential SQL injection patterns in a parameter.
+    """
+    sql_injection_pattern = re.compile(
+        r'(--|;|\'|\"|\/\*|\*\/|xp_|\bSELECT\b|\bUPDATE\b|\bDELETE\b|\bINSERT\b|\bDROP\b|\bUNION\b|\bALTER\b|\bEXEC\b)',
+        re.IGNORECASE
+    )
+    if sql_injection_pattern.search(str(param)):
+        return True
+    return False
+
+def sql_injection_safe(func):
+    """
+    Static method decorator to check for SQL injection in function parameters.
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        for arg in args:
+            if isinstance(arg, (list, tuple)):
+                for item in arg:
+                    if detect_sql_injection(item):
+                        raise ValueError("Potential SQL injection detected in arguments.")
+            else:
+                if detect_sql_injection(arg):
+                    raise ValueError("Potential SQL injection detected in arguments.")
+
+        for key, value in kwargs.items():
+            if isinstance(value, (list, tuple)):
+                for item in value:
+                    if detect_sql_injection(item):
+                        raise ValueError(f"Potential SQL injection detected in keyword argument '{key}'.")
+            else:
+                if detect_sql_injection(value):
+                    raise ValueError(f"Potential SQL injection detected in keyword argument '{key}'.")
+
+        return func(*args, **kwargs)
+    return wrapper
 
 class DatabaseManager:
     def __init__(self, db_name='app_database.db'):
@@ -46,6 +87,10 @@ class DatabaseManager:
         
 
 
+
+
+
+    @sql_injection_safe
     def insert_user(self, username, password):
         #inserts new user into the databse
         count=self.cursor.execute("SELECT count(*) FROM users WHERE username=(?)",(username,)) 
@@ -58,6 +103,7 @@ class DatabaseManager:
                 self.cursor.execute('INSERT INTO users (username, password,salt) VALUES (?, ?, ?)', (username, hashed_pwd ,salt.decode('utf-8'),))
                 self.conn.commit()
 
+    @sql_injection_safe
     def Create_Session(self,session):
         name=session[0]
         maxpart=session[1]
@@ -96,6 +142,7 @@ class DatabaseManager:
                 return True
         return False
 
+    @sql_injection_safe
     def Is_User_in_sess(self,username,sessname):
         cursor=self.cursor.execute("SELECT username FROM active_session_users WHERE username=(?) and session=(?)",(username,sessname))
         print(username)
@@ -106,6 +153,8 @@ class DatabaseManager:
                 return False
             return True
         return False
+    
+    @sql_injection_safe
     def Can_Join(self,sessname):
         if(self.Does_Sess_Exist(sessname)==True):
             cursor=self.cursor.execute('SELECT session FROM active_session_users WHERE session= (?)',(sessname,))
@@ -126,15 +175,17 @@ class DatabaseManager:
             print('session doesnt exist')
             return False
 
+    @sql_injection_safe
     def Insert_Active_User(self,username,sessname):
         self.cursor.execute('INSERT INTO active_session_users(username,session) VALUES (?,?)',(username,sessname))
         self.conn.commit()
 
+    @sql_injection_safe
     def Remove_Active_User(self,username,sessname):
         self.cursor.execute("DELETE FROM active_session_users WHERE username = (?) and session = (?)",(username,sessname,))
         self.conn.commit()
 
-
+    @sql_injection_safe
     def Session_users(self,sessname):
         cursor=self.cursor.execute("SELECT username FROM active_session_users WHERE session = (?)",(sessname,))
         Users=[]
@@ -169,6 +220,7 @@ class DatabaseManager:
                 return True
         return False
 
+    @sql_injection_safe
     def GetPassword(self,username):
         #gets password according to username
         cursor=self.cursor.execute("SELECT password FROM users WHERE username=(?) ",(username,))
@@ -177,6 +229,7 @@ class DatabaseManager:
         for row in cursor:
             return row[0]
     
+    @sql_injection_safe
     def GetSalt(self,username):
         cursor=self.cursor.execute("SELECT salt FROM users WHERE username=(?) ",(username,))
         if(cursor==" "):

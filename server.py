@@ -555,10 +555,25 @@ def ValidateLogin(username,password,db_manager):
 
 
 
+class SslAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, True)
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Parse ssl')
+    parser.add_argument("--use_ssl", type=bool,action=SslAction,nargs=0,default=False, help='use ssl protocol for socket or no')
+    return parser.parse_args()
+
 
 def main():
-    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    context.load_cert_chain(certfile="server.crt", keyfile="server.key")
+
+    args = parse_arguments()
+
+    if args.use_ssl:
+        print("server will use ssl")
+        context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        context.load_cert_chain(certfile="server.crt", keyfile="server.key")
+
     ip_address = socket.gethostbyname(socket.gethostname())
     ip_address = ipaddress.ip_address(ip_address)
 
@@ -571,7 +586,8 @@ def main():
     while True:
         client_socket, address = server_socket.accept()
         print("Accepted connection from", address)
-        #ssl_client_socket = context.wrap_socket(client_socket, server_side=True)
+        if args.use_ssl:
+            client_socket = context.wrap_socket(client_socket, server_side=True)
         client=cClient(client_socket,address,clients,db_manager)
         clients.append(client)
 
