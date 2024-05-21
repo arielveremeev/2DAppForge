@@ -54,6 +54,12 @@ class ConnectDialog(tk.Toplevel):
         self.cancel_button = tk.Button(self, text="Cancel", command=self.on_cancel)
         self.cancel_button.grid(row=3, column=2, padx=5, pady=5)
 
+        self.ssl=tk.BooleanVar()
+        self.ssl.set(False)
+
+        self.ssl_check=tk.Checkbutton(self,text="ssl on/off",variable=self.ssl,onvalue=True,offvalue=False,command=self.toggle_ssl)
+        self.ssl_check.grid(row=4, column=2, padx=5, pady=5)
+
         self.result = None
         self.ok_clicked = False
 
@@ -65,13 +71,17 @@ class ConnectDialog(tk.Toplevel):
         if server_ip and username and password:
             self.result = (server_ip, username, password)
             self.ok_clicked = True
-            self.callback(self.result, is_login)
+            self.callback(self.result, is_login,self.ssl.get())
         self.destroy()
 
     def on_cancel(self):
         self.destroy()
 
-
+    def toggle_ssl(self):
+        if self.ssl.get():
+            print("ssl on")
+        else:
+            print("ssl off")
 
 class CreateSessDialog(tk.Toplevel):
     def __init__(self,parent,callback):
