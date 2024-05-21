@@ -226,7 +226,7 @@ class GUI(tk.Tk):
 
     
 
-    def on_connect(self, credentials, isLogin=True):
+    def on_connect(self, credentials, isLogin=True,ssl_toggle=True):
         if credentials:
             server_ip, username, password = credentials
             
@@ -239,8 +239,13 @@ class GUI(tk.Tk):
 
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client_socket.connect((str(server_ip), port))
-                self.client_socket=client_socket
-                #self.client_socket =  context.wrap_socket(client_socket, server_hostname=str(server_ip))
+                if ssl_toggle:
+                    print("is sll")
+                    self.client_socket =  context.wrap_socket(client_socket, server_hostname=str(server_ip))
+                else:
+                    print("isnt sll")
+                    self.client_socket=client_socket
+
 
                 self.response_event=threading.Event()
 
