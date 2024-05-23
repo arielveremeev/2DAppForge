@@ -40,25 +40,25 @@ class Shape_List_frame(ttk.Frame):
 
         self.move_btn=tk.Radiobutton(self.nav_bar,text="move",variable=self.edit,value="move_shape",command=self.edit_shape)
         self.move_btn.configure(state=tk.DISABLED)
-        self.move_btn.pack(side=tk.RIGHT)
-
+        self.move_btn.grid(row=0,column=5,padx=1,pady=1)
+        
         self.scale_btn=tk.Radiobutton(self.nav_bar,text="scale",variable=self.edit,value="scale_shape",command=self.edit_shape)
         self.scale_btn.configure(state=tk.DISABLED)
-        self.scale_btn.pack(side=tk.RIGHT)
+        self.scale_btn.grid(row=1,column=5,padx=1,pady=1)
 
         self.rotate_btn=tk.Radiobutton(self.nav_bar,text="rotate",variable=self.edit,value="rotate_shape",command=self.edit_shape)
         self.rotate_btn.configure(state=tk.DISABLED)
-        self.rotate_btn.pack(side=tk.RIGHT)
+        self.rotate_btn.grid(row=2,column=5,padx=1,pady=1)
 
         self.edit.set(None)
 
         self.clear_btn=ttk.Button(self.nav_bar,text="clear canvas",command=self.clear_canvas)
         self.clear_btn.configure(state=tk.DISABLED)
-        self.clear_btn.pack(side=tk.RIGHT)
+        self.clear_btn.grid(row=4,column=3,padx=1,pady=1)
 
         self.delete_btn=ttk.Button(self.nav_bar,text="delete",command=self.delete_shape)
         self.delete_btn.configure(state=tk.DISABLED)
-        self.delete_btn.pack(side=tk.RIGHT)
+        self.delete_btn.grid(row=4,column=2,padx=1,pady=1)
 
 
 
@@ -66,19 +66,19 @@ class Shape_List_frame(ttk.Frame):
 
         self.draw_circle_button=tk.Radiobutton(self.nav_bar,text="circle",variable=self.var,value="circle",command=self.sel)
         self.draw_circle_button.configure(state=tk.DISABLED)
-        self.draw_circle_button.pack(anchor=tk.W)
+        self.draw_circle_button.grid(row=0,column=1,padx=1,pady=1)
 
         self.draw_rectangle_button=tk.Radiobutton(self.nav_bar,text="rectangle",variable=self.var,value="rectangle",command=self.sel)
         self.draw_rectangle_button.configure(state=tk.DISABLED)
-        self.draw_rectangle_button.pack(anchor=tk.W)
+        self.draw_rectangle_button.grid(row=1,column=1,padx=1,pady=1)
 
         self.draw_triangle_button=tk.Radiobutton(self.nav_bar,text="triangle",variable=self.var,value="triangle",command=self.sel)
         self.draw_triangle_button.configure(state=tk.DISABLED)
-        self.draw_triangle_button.pack(anchor=tk.W)
+        self.draw_triangle_button.grid(row=2,column=1,padx=1,pady=1)
 
         self.draw_polygon_button=tk.Radiobutton(self.nav_bar,text="polygon",variable=self.var,value="polygon",command=self.sel)
         self.draw_polygon_button.configure(state=tk.DISABLED)
-        self.draw_polygon_button.pack(anchor=tk.W)
+        self.draw_polygon_button.grid(row=3,column=1,padx=1,pady=1)
 
         self.var.set(None)
 

@@ -37,11 +37,17 @@ class SessionListFrame(ttk.Frame):
         self.create_btn=ttk.Button(self.nav_bar,text="create",command=self.open_create_sess_dialog)
         self.create_btn.pack(side=tk.RIGHT)
 
+        self.delete_btn=ttk.Button(self.nav_bar,text="delete",command=self.delete_sess)
+        self.delete_btn.configure(state=tk.DISABLED)
+        self.delete_btn.pack(side=tk.RIGHT)
+
     def on_select(self,event):
         if self.listbox.curselection():
-            self.join_btn.config(state=tk.NORMAL)
+            self.join_btn.configure(state=tk.ACTIVE)
+            self.delete_btn.configure(state=tk.ACTIVE)
         else:
             self.join_btn.config(state=tk.DISABLED)
+            self.delete_btn.configure(state=tk.DISABLED)
 
     def on_double_click(self,event):
         if self.listbox.curselection():
@@ -74,6 +80,9 @@ class SessionListFrame(ttk.Frame):
             pass
         
     
+    def delete_sess(self):
+        pass
+
     def Leave_Sess(self):
         if self.current_sess != "":
             self.callbacks["on_leave_session"]()
