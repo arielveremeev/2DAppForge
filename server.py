@@ -10,6 +10,9 @@ from DatabaseManager import DatabaseManager
 from shapes import Shape
 from shapes import CreateShape
 from shapes import ShapeJsonEncoder
+from collections import defaultdict
+from threading import Thread,Lock
+from time import time
 
 class cSession():
     def __init__(self,name):
@@ -155,6 +158,7 @@ class cClient():
         #pre login while
         while True:
             data = self.client_socket.recv(1024)
+            print ("recived message len",len(data) if data is None else 0)
             if not data:
                 break
 
@@ -583,13 +587,40 @@ def main():
     server_socket.listen(5)
     print(f"server listening")
     clients=[]
+    clients_lock=Lock()
+
+    MAX_CONNECTIONS = 100
+    CONNECTION_TIME_WINDOW = 60  # 1 minute
+    connection_attempts = defaultdict(list)
+
+    def clean_old_connections(address):
+        current_time = time()
+        connection_attempts[address] = [
+            timestamp for timestamp in connection_attempts[address]
+            if current_time - timestamp < CONNECTION_TIME_WINDOW
+        ]
+
     while True:
         client_socket, address = server_socket.accept()
+        address=address[0]
         print("Accepted connection from", address)
+        with clients_lock:
+            clean_old_connections(address)
+            if len(connection_attempts[address]) >= MAX_CONNECTIONS:
+                print(f"Too many connections from {address}. Connection denied.")
+                client_socket.close()
+                continue
+            connection_attempts[address].append(time())
         if args.use_ssl:
-            client_socket = context.wrap_socket(client_socket, server_side=True)
-        client=cClient(client_socket,address,clients,db_manager)
-        clients.append(client)
+            try:
+                client_socket = context.wrap_socket(client_socket, server_side=True)
+            except ssl.SSLError as e:
+                print(f"SSL error: {e}")
+                client_socket.close()
+                continue
+        client = cClient(client_socket, address, clients, db_manager)
+        with clients_lock:
+            clients.append(client)
 
         client.start_client_thread()
 
