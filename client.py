@@ -3,13 +3,14 @@ import socket
 import threading
 import ssl
 import ipaddress
+from protocolsocket import ProtocolSocketWrapper
 import json
 
 def receive_messages(client_socket,event) -> None:
     while True:
         try:
             # Receive message from server
-            jMessage = client_socket.recv(1024).decode('utf-8')
+            jMessage = client_socket.recv()
             if jMessage:
                 message=json.loads(jMessage)
                 print(message["message"])
@@ -56,7 +57,7 @@ def send_user(client_socket,event,username = None,password = None):
             else:
                 message=','.join(command)
             
-            client_socket.send(message.encode('utf-8'))
+            client_socket.send(message)
             message = None
             event.wait()
             event.clear()
@@ -103,6 +104,7 @@ def main():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((host, port))
     ssl_client_socket =  context.wrap_socket(client_socket, server_hostname=host)
+    ssl_client_socket=ProtocolSocketWrapper(ssl_client_socket)
     
     #create event for thread synchronization
     event=threading.Event()

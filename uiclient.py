@@ -6,6 +6,7 @@ from PIL import Image, ImageDraw
 import socket
 import ipaddress
 import ssl
+from protocolsocket import ProtocolSocketWrapper
 import json
 import threading
 import queue
@@ -246,7 +247,8 @@ class GUI(tk.Tk):
                 else:
                     print("isnt sll")
                     self.client_socket=client_socket
-
+                self.client_socket=ProtocolSocketWrapper(self.client_socket)
+                
 
                 self.response_event=threading.Event()
 
@@ -257,11 +259,11 @@ class GUI(tk.Tk):
                 if isLogin:
                     message=','.join(["login",str(username),str(password)])
                     self.CustomEventsHandlers["event_wait"] = self.after_login
-                    self.client_socket.send(message.encode('utf-8'))                                
+                    self.client_socket.send(message)
                 else:
                     message=','.join(["sign_up",str(username),str(password)])
                     self.CustomEventsHandlers["event_wait"] = self.after_sign_up
-                    self.client_socket.send(message.encode('utf-8'))                                
+                    self.client_socket.send(message)
                 
         else:
             messagebox.showinfo("Connect", "Connection cancelled")
@@ -270,15 +272,14 @@ class GUI(tk.Tk):
         if(self.client_socket is not None and sess_details):
             name,maxpart=sess_details
             message=','.join(["create_session",name,maxpart])
-            self.client_socket.send(message.encode('utf-8'))
-
+            self.client_socket.send(message)
         else:
             pass
         
     def on_delete_session(self,sessname):
         if(self.client_socket is not None and sessname):
             message=','.join(["delete_session",sessname])
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
         else:
             pass
 
@@ -287,8 +288,8 @@ class GUI(tk.Tk):
             self.shape_list_widget.Joined_sess()
             self.canvas.toggle_draw()
             message=','.join(["join_session",sessname])
-            self.client_socket.send(message.encode('utf-8'))
-            self.client_socket.send(("print_users,session").encode('utf-8'))
+            self.client_socket.send(message)
+            self.client_socket.send(("print_users,session"))
             self.in_sess=True
         else:
             pass
@@ -296,7 +297,7 @@ class GUI(tk.Tk):
     def on_leave_session(self):
         if(self.client_socket is not None):
             message=','.join(["exit_session"])
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
             self.shape_list_widget.ListClear()
             self.canvas.on_clear(None)
             self.storage_shapes.clear()
@@ -306,14 +307,14 @@ class GUI(tk.Tk):
     def on_load_file(self,filename):
         if(self.client_socket is not None and filename):
             message=','.join(["load_file",filename])
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
         else:
             pass
 
     def on_save_file(self,filename):
         if(self.client_socket is not None and filename):
             message=','.join(["save_file",filename])
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
         else:
             pass 
 
@@ -334,7 +335,7 @@ class GUI(tk.Tk):
             servId=self.convert_canvas_2serv(shapeId)
         if (self.client_socket is not None and moveX and moveY and servId):
             message=",".join(["move_shape",str(servId),str(moveX),str(moveY)])
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
         else:
             pass
     
@@ -343,7 +344,7 @@ class GUI(tk.Tk):
             servId=self.convert_canvas_2serv(shapeId)
         if (self.client_socket is not None and scale_factor and servId):
             message=",".join(["scale_shape",str(servId),str(scale_factor)])
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
         else:
             pass
     def rotate_shape(self,shapeId,rotate_factor):
@@ -351,7 +352,7 @@ class GUI(tk.Tk):
             servId=self.convert_canvas_2serv(shapeId)
         if (self.client_socket is not None and rotate_factor and servId):
             message=",".join(["rotate_shape",str(servId),str(rotate_factor)])
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
         else:
             pass
 
@@ -367,14 +368,14 @@ class GUI(tk.Tk):
     def send_new_shape(self,shape):
         if (self.client_socket is not None and shape):
             message=",".join(["add_shape",str(shape)])
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
         else:
             pass
     
     def delete_shape(self,shapeid):
         if (self.client_socket is not None and shapeid):
             message=",".join(["delete_shape",str(shapeid)])
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
         else:
             pass
     def select_shape(self,servId):
@@ -387,8 +388,8 @@ class GUI(tk.Tk):
         if srv_responce["status"] == "success":         
             self.log_message("login successful")
             print("send print_session")
-            self.client_socket.send("print_sessions".encode('utf-8'))
-            self.client_socket.send(("print_users,all").encode('utf-8'))
+            self.client_socket.send("print_sessions")
+            self.client_socket.send(("print_users,all"))
             self.login_btn.configure(state=tk.DISABLED)
             self.disconnect_btn.configure(state=tk.ACTIVE)
         else:
@@ -421,7 +422,7 @@ class GUI(tk.Tk):
         self.dialog=LoadFileDialog(self,self.SessionHandlers)
         if(self.client_socket is not None):
             message=','.join(["list_files"])
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
         else:
             pass
         self.dialog.grab_set()
@@ -447,7 +448,7 @@ class GUI(tk.Tk):
                 message=','.join(["all",text])
             else:
                 message=text
-            self.client_socket.send(message.encode('utf-8'))
+            self.client_socket.send(message)
             self.command_entry.delete(0,tk.END)
 
 
@@ -483,7 +484,7 @@ class GUI(tk.Tk):
         while True:
             try:
                 # Receive message from server
-                jMessage = self.client_socket.recv(1024).decode('utf-8')
+                jMessage = self.client_socket.recv()
                 if jMessage:
                     message=json.loads(jMessage)                    
                     if(self.verbose.get()):

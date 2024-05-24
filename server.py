@@ -7,6 +7,7 @@ from datetime import date
 import json
 import os
 from DatabaseManager import DatabaseManager 
+from protocolsocket import ProtocolSocketWrapper
 from shapes import Shape
 from shapes import CreateShape
 from shapes import ShapeJsonEncoder
@@ -145,10 +146,10 @@ class cClient():
         for c in self.clients:
             if(refresh):
                 if(c.session is None):
-                    c.safe_send(jData.encode('utf-8'))
+                    c.safe_send(jData)
             else:
                 if(self.session == c.session and (self.client_socket != c.client_socket or send2self==True)):
-                    c.safe_send(jData.encode('utf-8'))
+                    c.safe_send(jData)
         
 
 
@@ -157,12 +158,13 @@ class cClient():
         print(f"accepted connection from {self.address}")
         #pre login while
         while True:
-            data = self.client_socket.recv(1024)
-            print ("recived message len",len(data) if data is None else 0)
+            data = self.client_socket.recv() #1024)
             if not data:
                 break
 
-            messagestr=data.decode('utf-8')
+            messagestr=data
+            print(f"Received message [{messagestr}] with length {len(messagestr)}")
+            
             user=messagestr.split(',')
             # This Python code snippet is implementing a basic user authentication system. It checks
             # if the user input is either "sign_up" or "login". If the input is "sign_up", it checks
@@ -192,7 +194,7 @@ class cClient():
                             "status":"success",
                             "data":None}
                     jData=json.dumps(data)
-                    self.client_socket.sendall(jData.encode('utf-8'))
+                    self.client_socket.send(jData)
         
                 else:
                     if(len(user[1:])!=2):
@@ -218,28 +220,29 @@ class cClient():
                                     "data":None}
                         if(data.get("status")=="success"):
                             jData=json.dumps(data)
-                            self.client_socket.sendall(jData.encode('utf-8'))
+                            self.client_socket.send(jData)
                             self.is_connection_live=True
                             password=""
                             break
                         else:
                             jData=json.dumps(data)
-                            self.client_socket.sendall(jData.encode('utf-8'))
+                            self.client_socket.send(jData)
             else:
                 data={"message":"no such command please log in to use other commands",
                     "status":"fail",
                     "data":None}
                 jData=json.dumps(data)
-                self.client_socket.sendall(jData.encode('utf-8'))
+                self.client_socket.send(jData)
         
         #after login while(all general commands)
         while self.is_connection_live:
             try:
-                data = self.client_socket.recv(1024)
+                data = self.client_socket.recv() # 1024)
                 if not data:
                     self.is_connection_live=False
                     break
-                messagestr = data.decode('utf-8')
+                messagestr = data
+                print(f"Received message [{messagestr}] with length {len(messagestr)}")
                 command=messagestr.split(',')
                 if len(command)==0:
                     continue
@@ -272,18 +275,23 @@ class cClient():
                 elif(command[0]=="print_users"):
                     #db_manager.PrintUsers()
                     Users=[]
-                    if command[1] == "all":
-                        for client in self.clients:
-                            Users.append(client.username)
-                    elif command[1] == "session":
-                        if self.session:
-                            Users=self.db_manager.Session_users(self.session)
-                    self.Broadcast(msg2send="users are :",data2send=Users,datatype="user_list",send2self=False)
-                    data={"message":"users are : ",
-                        "status":"success",
-                        "data":{"datatype":"user_list",
-                                "content":Users}
-                         }
+                    if(len(command[1:]) == 1):
+                        if command[1] == "all":
+                            for client in self.clients:
+                                Users.append(client.username)
+                        elif command[1] == "session":
+                            if self.session:
+                                Users=self.db_manager.Session_users(self.session)
+                        self.Broadcast(msg2send="users are :",data2send=Users,datatype="user_list",send2self=False)
+                        data={"message":"users are : ",
+                            "status":"success",
+                            "data":{"datatype":"user_list",
+                                    "content":Users}
+                            }
+                    else:
+                        data={"message":"wrong arguments",
+                            "status":"fail",
+                            "data":None}
                 #create a new session
                 elif(command[0]=="create_session"):
                     session=command[1:]
@@ -552,7 +560,7 @@ class cClient():
                     
 
                 jData=json.dumps(data,cls=ShapeJsonEncoder)
-                self.client_socket.sendall(jData.encode('utf-8'))
+                self.client_socket.send(jData)
             
             except Exception as e:
                 print("error",e)
@@ -643,6 +651,7 @@ def main():
                 print(f"SSL error: {e}")
                 client_socket.close()
                 continue
+        client_socket = ProtocolSocketWrapper(client_socket)
         client = cClient(client_socket, address, clients, db_manager)
         with clients_lock:
             clients.append(client)
