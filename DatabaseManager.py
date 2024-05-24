@@ -123,10 +123,10 @@ class DatabaseManager:
     
     @sql_injection_safe
     def Delete_session(self,session):
-        cursor=self.cursor.execute("SELECT name FROM sessions WHERE name=(?)",(session))
+        cursor=self.cursor.execute("SELECT name FROM sessions WHERE name=(?)",(session,))
         result=cursor.fetchone()
         if result:
-            cursor.execute("DELETE FROM sessions WHERE name=(?)",(session))
+            cursor.execute("DELETE FROM sessions WHERE name=(?)",(session,))
             print(session)
             print(result)
             self.conn.commit()
