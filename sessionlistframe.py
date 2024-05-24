@@ -76,6 +76,7 @@ class SessionListFrame(ttk.Frame):
             self.leave_btn.configure(state=tk.ACTIVE)
             self.join_btn.configure(state=tk.DISABLED)
             self.create_btn.configure(state=tk.DISABLED)
+            self.delete_btn.configure(state=tk.DISABLED)
         else:
             pass
         

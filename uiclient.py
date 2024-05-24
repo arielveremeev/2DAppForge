@@ -21,7 +21,7 @@ from shapelistframe import Shape_List_frame
 class GUI(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("2DAppForge")
+        self.title("2DShapeForge")
         self.geometry("800x600")
 
         self.threads=[]
