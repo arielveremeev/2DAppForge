@@ -81,7 +81,13 @@ class SessionListFrame(ttk.Frame):
         
     
     def delete_sess(self):
-        pass
+        seleceted_sess=self.listbox.get(self.listbox.curselection())
+        if(seleceted_sess):
+            sessname=seleceted_sess.split(",")[0]
+            print(sessname)
+            self.callbacks["on_delete_session"](sessname)
+        else:
+            pass
 
     def Leave_Sess(self):
         if self.current_sess != "":

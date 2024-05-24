@@ -40,6 +40,7 @@ class GUI(tk.Tk):
 
         self.SessionHandlers={
             "on_create_session":self.on_create_session,
+            "on_delete_session":self.on_delete_session,
             "on_join_session":self.on_join_session,
             "on_leave_session":self.on_leave_session,
             "on_load_file":self.on_load_file,
@@ -271,6 +272,13 @@ class GUI(tk.Tk):
             message=','.join(["create_session",name,maxpart])
             self.client_socket.send(message.encode('utf-8'))
 
+        else:
+            pass
+        
+    def on_delete_session(self,sessname):
+        if(self.client_socket is not None and sessname):
+            message=','.join(["delete_session",sessname])
+            self.client_socket.send(message.encode('utf-8'))
         else:
             pass
 

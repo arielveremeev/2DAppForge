@@ -164,6 +164,12 @@ class cClient():
 
             messagestr=data.decode('utf-8')
             user=messagestr.split(',')
+            # This Python code snippet is implementing a basic user authentication system. It checks
+            # if the user input is either "sign_up" or "login". If the input is "sign_up", it checks
+            # if the correct number of arguments are provided, then extracts the username and password
+            # from the input. It then checks if the username already exists in the database, and if
+            # not, inserts the user into the database. Finally, it sends a response message back to
+            # the client.
             if(user[0]=="sign_up" or user[0]=="login"):
                 if(user[0]=="sign_up"):
                     if(len(user[1:])!=2):
@@ -239,6 +245,12 @@ class cClient():
                     continue
                 #message broadcasting
                 print("recived command ",command[0])
+                # The above Python code snippet is checking if the first element of the `command` list is equal to
+                # "all". If it is, it prints "contains all" and then proceeds to check if the `self.session` is not
+                # None. If the length of the `command` list excluding the first element is 0, it creates a response
+                # dictionary with a message indicating to be more precise. Otherwise, it constructs a message using
+                # the `self.username` and the remaining elements of the `command` list, broadcasts this message using
+                # the `Broadcast` method, and continues to the next iteration.
                 if "all" == command[0]:
                     print("contains all")
                     if(self.session!=None):
@@ -287,6 +299,19 @@ class cClient():
                             "status":"success",
                             "data":None}
                         self.Broadcast("broadcast updated sessions",self.db_manager.Get_Sessions(),datatype="session_list",refresh=True)
+
+                elif(command[0] == "delete_session"):
+                    if(command[1]):
+                        session=command[1]
+                        if(self.db_manager.Delete_session(session) == False):
+                            data={"message":"session not delete, session with this name doesnt exist",
+                                "status":"fail",
+                                "data":None}  
+                        else:
+                            data={"message":"session deleted",
+                                "status":"success",
+                                "data":None}
+                            self.Broadcast("broadcast updated sessions",self.db_manager.Get_Sessions(),datatype="session_list",refresh=True)
                 
                 #print all registered sessions
                 elif(command[0]=="print_sessions"):
