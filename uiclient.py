@@ -18,8 +18,18 @@ from shapelistframe import Shape_List_frame
 
 
 
+"""
+    The GUI class is the main window of the application.
+    It is a subclass of the tkinter.Tk class and is responsible for creating the main window and managing the user interface.
+"""
 class GUI(tk.Tk):
     def __init__(self):
+        """
+            The constructor initializes the main window of the application.
+            it also initializes sets of callback functions and event handlers for managing user input and server communication.
+            custom event handlers are used to handle responses from the server and from the different parts of the application
+
+        """
         super().__init__()
         self.title("2DShapeForge")
         self.geometry("800x600")
@@ -29,6 +39,10 @@ class GUI(tk.Tk):
         self.verbose=tk.BooleanVar()
         self.in_sess=False
 
+        """
+            handler for server responses
+            the description of each function look at the handler function itself
+        """
         self.CustomEventsHandlers = {
             "event_wait":None,
             "user_list": self.update_user_list,
@@ -38,7 +52,11 @@ class GUI(tk.Tk):
             "echo_text":self.update_echo_text,
             "msg_broadcast":self.update_echo_text
         }
-
+        
+        """
+            handler for sessionlistframe requests
+            the description of each function look at the handler function itself
+        """
         self.SessionHandlers={
             "on_create_session":self.on_create_session,
             "on_delete_session":self.on_delete_session,
@@ -48,6 +66,10 @@ class GUI(tk.Tk):
             "on_save_file":self.on_save_file
         }
 
+        """
+            handler for drawcanvas frame changes that need to be sent to a different parts of the application
+            the description of each function look at the handler function itself
+        """
         self.CanvasHandlers={
             "on_change_type":self.change_shape_type,
             "on_clear_canvas":self.on_clear_canvas,
@@ -61,8 +83,10 @@ class GUI(tk.Tk):
             "on_shape_rotate":self.rotate_shape
         }
 
-        # Queue for inter-thread communication
+        
+        #Queue for communication between the main gui thread and the thread rsponsible for recieving messages from the server
         self.msg_queue = queue.Queue()
+        #binds the custom event to the function that proccesses the messages from the queue
         self.bind("<<Messages2Queue>>",self.ProcessMessagesFromQueue)
         self.create_widgets()
         self.log_message("Welcome")
@@ -71,16 +95,26 @@ class GUI(tk.Tk):
         self.storage_shapes = dict()
     
     def close_window(self):
+        """
+            this function closes the socket connection if it was open and closes the window of the application
+        """
         if self.client_socket is not None:
             self.CustomEventsHandlers["event_wait"] = self.on_close
             self.client_socket.close()
-        else:
-            self.quit()
+        self.quit()
+    
     def on_close(self,_):
+        """
+            this function closes the window of the application
+        """
         self.quit()
 
     def create_widgets(self):
-        # Navigation bar
+        """
+            creates the nav_bar frame of the main window 
+            it houses the connect/disconnect buttons at the left
+            and the load/save/export buttons at the right
+        """
         self.nav_bar = tk.Frame(self)
         
         self.login_btn = tk.Button(self.nav_bar, text="Connect", command=self.open_login_dialog)
@@ -102,7 +136,12 @@ class GUI(tk.Tk):
         self.nav_bar.pack(side=tk.TOP, fill=tk.X)
 
 
-        # Main frame divided into three areas
+        """
+            creates the main_frame of the main window
+            it houses the user_list_frame at the left
+            the session_list_frame and shape_list_frame at the right
+            and the drawcanvas frame at the center
+        """
         self.main_frame = tk.Frame(self)#,borderwidth = 10, relief = 'ridge')
         self.main_frame.pack(expand=True, fill=tk.BOTH)
 
@@ -130,18 +169,17 @@ class GUI(tk.Tk):
 
         self.rightnotebook.pack(side=tk.RIGHT,fill=tk.Y)
 
-        #self.main_right_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
-        #self.session_list_widget=SessionListFrame(self.main_right_frame,self.SessionHandlers)
-        #self.session_list_widget.pack(expand=True, fill=tk.BOTH)
-        #self.main_right_frame.pack(side=tk.RIGHT,fill=tk.Y)
-
         self.main_center_frame=tk.Frame(self.main_frame)#, borderwidth = 10, relief = 'ridge')
         self.main_center_frame.pack(expand=True,fill=tk.BOTH)
         self.canvas=DrawCanvas(self.main_center_frame,self.CanvasHandlers)
         self.canvas.pack(expand=True, fill=tk.BOTH)
         
 
-        # Command prompt
+        """
+            creates the command_frame of the main window
+            it houses the response_log at the top
+            the command_entry and send button at the center along with the verbose and send button
+        """
         self.command_frame = tk.Frame(self)
         self.command_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
@@ -167,6 +205,9 @@ class GUI(tk.Tk):
         self.send_btn.pack(side=tk.LEFT)
 
     def open_login_dialog(self):
+        """
+            this function opens the login dialog
+        """
         local_ip_as_default = socket.gethostbyname(socket.gethostname())
         dialog = ConnectDialog(self, local_ip_as_default,self.on_connect)
         dialog.grab_set()  # Make the dialog modal
@@ -174,6 +215,9 @@ class GUI(tk.Tk):
             
 
     def open_save_file_dialog(self):
+        """
+            this function opens the save file dialog
+        """
         dialog = SaveFileDialog(self)
         dialog.grab_set()  # Make the dialog modal
         self.wait_window(dialog)
@@ -181,7 +225,9 @@ class GUI(tk.Tk):
             self.on_save_file(dialog.result)
 
     def export_image(self):
-        '''open FileDialog with tkinter to save the image'''
+        """
+            this function executes the proccess of exporting the image from the drawcanvas and saves it as a png file with the help of filedialog
+        """
         filetypes = [("PNG files", "*.png"), ("All files", "*")]
         filename = filedialog.asksaveasfilename(title="Save image as...", filetypes=filetypes)
         if filename:
@@ -191,15 +237,24 @@ class GUI(tk.Tk):
             image.save(filename)
 
     def update_user_list(self,user_list):
+        """
+            user_list: proccesses the users list from the server and updates the in the userlistframe
+        """
         if user_list:
             self.user_list.delete(0,tk.END)
             for user in user_list:
                 self.user_list.insert(tk.END,user)
 
     def update_session_list(self,session_list:dict):
+        """
+            session_list: proccesses the sessions list from the server updates the in the sessionlistframe
+        """
         self.session_list_widget.Update_list(session_list)
 
     def update_shape_list(self,shape_list:dict):
+        """
+            shape_list: proccesses the shapes list from the server updates the in the shapelistframe
+        """
         for Sid,details in shape_list.items():
             print("GUI::update_shape_list:: server shape id",Sid)
             srvShapeId = int(Sid)
@@ -223,12 +278,22 @@ class GUI(tk.Tk):
                 
 
     def update_echo_text(self,echo_text:str):
+        """
+            echo_text: proccesses the text from the server updates the in the message log
+        """
         self.log_message(echo_text)
         pass
 
     
 
     def on_connect(self, credentials, isLogin=True,ssl_toggle=True):
+        """
+            this function is triggered after the connect dialog is closed
+            it creates a connection with the server(either a secure ssl conncetion or a regular connection) 
+            creates a thread for recieving and proccessing responses from the server
+            and schedules a custom event to be triggered after the server responce to the signup/login command
+
+        """
         if credentials:
             server_ip, username, password = credentials
             
@@ -269,6 +334,9 @@ class GUI(tk.Tk):
             messagebox.showinfo("Connect", "Connection cancelled")
     
     def on_create_session(self,sess_details):
+        """
+            on_create_session: sends create_session command with arguments from the application to the server
+        """
         if(self.client_socket is not None and sess_details):
             name,maxpart=sess_details
             message=','.join(["create_session",name,maxpart])
@@ -277,6 +345,9 @@ class GUI(tk.Tk):
             pass
         
     def on_delete_session(self,sessname):
+        """
+            on_delete_session: sends delete_session command with arguments from the application to the server
+        """
         if(self.client_socket is not None and sessname):
             message=','.join(["delete_session",sessname])
             self.client_socket.send(message)
@@ -284,6 +355,9 @@ class GUI(tk.Tk):
             pass
 
     def on_join_session(self,sessname):
+        """
+            on_join_session: sends join_session command with arguments from the application to the server
+        """
         if(self.client_socket is not None and sessname):
             self.shape_list_widget.Joined_sess()
             self.canvas.toggle_draw()
@@ -295,6 +369,9 @@ class GUI(tk.Tk):
             pass
 
     def on_leave_session(self):
+        """
+            on_leave_session: sends exit_session command with arguments from the application to the server
+        """
         if(self.client_socket is not None):
             message=','.join(["exit_session"])
             self.client_socket.send(message)
@@ -305,6 +382,9 @@ class GUI(tk.Tk):
             pass
 
     def on_load_file(self,filename):
+        """
+            on_load_file: sends load_file command with arguments from the application to the server
+        """
         if(self.client_socket is not None and filename):
             message=','.join(["load_file",filename])
             self.client_socket.send(message)
@@ -312,6 +392,9 @@ class GUI(tk.Tk):
             pass
 
     def on_save_file(self,filename):
+        """
+            on_save_file: sends save_file command with arguments from the application to the server
+        """
         if(self.client_socket is not None and filename):
             message=','.join(["save_file",filename])
             self.client_socket.send(message)
@@ -319,18 +402,30 @@ class GUI(tk.Tk):
             pass 
 
     def change_shape_type(self,shape):
+        """
+            on_change_type: sends change_shape_type mode change from shape_list_frame to drawcanvas
+        """
         if shape:
             self.canvas.change_shape_type(shape)
 
     def change_draw_type(self,draw_type):
+        """
+            on_change_draw: sends change_draw_type mode change from shape_list_frame to drawcanvas
+        """
         if draw_type:
             self.canvas.change_draw_type(draw_type)
     
     def change_edit_type(self,edit_type):
+        """
+            on_change_edit: sends change_edit_type mode change from shape_list_frame to drawcanvas
+        """
         if edit_type:
             self.canvas.change_edit_type(edit_type)
 
     def move_shape(self,shapeId,moveX,moveY):
+        """
+            on_shape_move: sends final result of shape move operation from drawcanvas to server as move_shape command
+        """
         if shapeId:
             servId=self.convert_canvas_2serv(shapeId)
         if (self.client_socket is not None and moveX and moveY and servId):
@@ -340,6 +435,9 @@ class GUI(tk.Tk):
             pass
     
     def scale_shape(self,shapeId,scale_factor):
+        """
+            on_shape_scale: sends final result of shape scale operation from drawcanvas to server as scale_shape command
+        """
         if shapeId:
             servId=self.convert_canvas_2serv(shapeId)
         if (self.client_socket is not None and scale_factor and servId):
@@ -348,6 +446,9 @@ class GUI(tk.Tk):
         else:
             pass
     def rotate_shape(self,shapeId,rotate_factor):
+        """
+            on_shape_rotate: sends final result of shape rotate operation from drawcanvas to server as rotate_shape command
+        """
         if shapeId:
             servId=self.convert_canvas_2serv(shapeId)
         if (self.client_socket is not None and rotate_factor and servId):
@@ -357,15 +458,24 @@ class GUI(tk.Tk):
             pass
 
     def on_clear_canvas(self):
+        """
+            on_clear_canvas: sends clear_canvas from shape_list_frame to drawcanvas
+        """
         self.canvas.on_clear(None)
 
     def convert_canvas_2serv(self,Cid):
+        """
+            this function converts the canvas shape id to the server shape id
+        """
         for key,value in self.storage_shapes.items():
             if Cid == value :
                 return key
         print("not found")
 
     def send_new_shape(self,shape):
+        """
+            on_shape_finish: sends final result of drawing operation from drawcanvas to server as add_shape command
+        """
         if (self.client_socket is not None and shape):
             message=",".join(["add_shape",str(shape)])
             self.client_socket.send(message)
@@ -373,17 +483,28 @@ class GUI(tk.Tk):
             pass
     
     def delete_shape(self,shapeid):
+        """
+            on_delete_shape: sends delete_shape command with arguments from the application to the server
+        """
         if (self.client_socket is not None and shapeid):
             message=",".join(["delete_shape",str(shapeid)])
             self.client_socket.send(message)
         else:
             pass
     def select_shape(self,servId):
+        """
+            on_shape_select: selects shape on canvas after shape selection in shapelist
+        """
         if servId:
             self.canvas.draw_shape_bb(self.storage_shapes[servId])
 
 
     def after_login(self,srv_responce):
+        """
+            this function is a custom event triggered by a response of the server to the login command and proccesses it
+            if the login was a success it requests a user list and a session list from the server and configures coresponding gui buttons
+            otherwise it closes the socket connection and logs the failure
+        """
         self.CustomEventsHandlers["event_wait"]=None
         if srv_responce["status"] == "success":         
             self.log_message("login successful")
@@ -398,7 +519,13 @@ class GUI(tk.Tk):
             self.log_message("login failed")
             self.login_btn.configure(state=tk.NORMAL)
             self.disconnect_btn.configure(state=tk.DISABLED)
+
     def after_sign_up(self,srv_responce):
+        """
+            this function is a custom event triggered by a response of the server to the signup command and proccesses it
+            if the signup was a success it logs the success and tells the user he can sign in
+            otherwise it closes the socket connection and logs the failure
+        """
         self.CustomEventsHandlers["event_wait"]=None
         if srv_responce["status"] == "success":
             self.log_message("sign up successful you can login")
@@ -409,6 +536,10 @@ class GUI(tk.Tk):
         self.client_socket=None          
 
     def disconnect_from_server(self):
+        """
+            this function closes the socket connection 
+            and configures the gui buttons to their original state before a login was initiated
+        """
         if self.client_socket is not None:
             self.client_socket.close()
             self.client_socket = None
@@ -419,6 +550,10 @@ class GUI(tk.Tk):
         self.shape_list_widget.ListClear()
 
     def load_file(self):
+        """
+            this function opens the dialog for choosing a file from the assests folder of the server
+            which is provided by the listfiles command on the server.
+        """
         self.dialog=LoadFileDialog(self,self.SessionHandlers)
         if(self.client_socket is not None):
             message=','.join(["list_files"])
@@ -429,19 +564,27 @@ class GUI(tk.Tk):
         self.wait_window(self.dialog)
         self.dialog = None
     def update_list_files(self,shape_list:dict):
+        """
+            list_files: proccesses the files list from the server updates the in the loadfiledialog
+        """
         if self.dialog is not None:
             self.dialog.update_list(shape_list)
 
-    def save_file(self):
-        pass
 
     def on_verbose(self):
+        """
+            this function toggles the verbose mode on and off and logs the change
+        """
         if(self.verbose.get()):
             self.log_message("verbose turned on")
         else:
             self.log_message("verbose turned off")
 
     def send_command(self):
+        """
+            this function sends the command from the command entry to the server
+            the same command is also used for in session communication using the message log
+        """
         text=self.command_entry.get()
         if text:
             if self.in_sess:
@@ -451,10 +594,11 @@ class GUI(tk.Tk):
             self.client_socket.send(message)
             self.command_entry.delete(0,tk.END)
 
-
-    def event_wait(self):
-        pass
     def ProcessMessagesFromQueue(self, event):
+        """
+            this function is a custom handler for custom tk event that proccess the messages from the queue one by one
+            depending on the datatype of the message and calls its corresponding handler
+        """
         print("ProcessMessagesFromQueue")
         size=self.msg_queue.qsize()
         try:
@@ -470,6 +614,9 @@ class GUI(tk.Tk):
 
 
     def log_message(self,message):
+        """
+            this function logs the message in the message log widget
+        """
         if message:
             print(message)
             self.response_log.configure(state="normal")
@@ -481,6 +628,15 @@ class GUI(tk.Tk):
             self.response_log.configure(state="disabled")
         
     def receive_messages(self):
+        """
+            this function is the thread function responsible for recieving messages from the server
+            it recives a json format response which has a message,response status and a data part(consisting of a datatype and a content part)
+            every server response logged into the message log based on the verbose mode status including data part of the response
+            if the response's includes a data part it is put in the message queue for further proccessing
+            after each response the custom event is triggered to proccess the message from the queue
+            for each message the event_wait event is addded to the msg_queue for future proccessing
+            if the socket returns an empty thread the threads closes.
+        """
         while True:
             try:
                 # Receive message from server
