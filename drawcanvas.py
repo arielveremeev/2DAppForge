@@ -383,6 +383,10 @@ class DrawCanvas(tk.Canvas):
 
 
     def edit_shape(self,Sid,details:list):
+        """
+            this function recives a shape id and a list of details about a shape in a specific format
+            after which it parses the list and redraws the shape whos id was provided in the arguments
+        """
         if Sid and details:
             print("drawcanvas::edit_shape:: coords from canvas",self.coords(int(Sid)))
             print("drawcanvas::edit_shape:: coords from server",details)
@@ -401,6 +405,11 @@ class DrawCanvas(tk.Canvas):
                 self.coords(int(Sid),float(Ccoords[0]), float(Ccoords[1]), float(Ccoords[2]), float(Ccoords[3]))
                 
     def start_draw(self, event):
+        """
+            this function is triggered on the click of the left mouse button and creates a shape object.
+            the shape object is created based on the selected drawing type. 
+            this function is for all modes except polygon which has its own start_draw function
+        """
         self.start_x = event.x
         self.start_y = event.y
         if self.selectedshape == "rectangle":
@@ -419,6 +428,11 @@ class DrawCanvas(tk.Canvas):
             )
 
     def draw_shape(self, event):
+        """
+            this function is triggered when u drag the mouse with the left mouse button held and it redraws the shape object.
+            it redraws the shape object based on the selected draw type and the position of the mouse cursor on the canvas
+            this function is for all modes except polygon which has its own draw function
+        """
         if self.current_shape_item is not None:
             if(self.selectedshape=="circle"):
                 x= event.x
@@ -434,6 +448,12 @@ class DrawCanvas(tk.Canvas):
                 self.coords(self.current_shape_item, self.start_x, self.start_y, x, y)
     
     def stop_draw(self, event):
+        """
+            this function is triggered on the release of the left mouse button and it saves all the coordinates of the current shape object (and the radius if its a circle)
+            after they are saved a message a string is construced which consists of the name of the shape the amount of vertexes it has and its coordinates(and a radius if its a circle)
+            then a callback is called with the construced string as a parameter
+            this function is for all shapes except polygon which has its own stop_draw function
+        """
         if self.current_shape_item is not None:
             Ccoords=self.coords(self.current_shape_item)
             shape=""
@@ -463,12 +483,22 @@ class DrawCanvas(tk.Canvas):
         self.current_shape_item = None
 
     def draw_polygon(self,event):
+        """
+            this function is the draw function for the polygon drawing mode and it works by creating and appending the coordinates where the mouse was clicked into a list.
+            this list is forwarded to the draw_polygon canvas function which recives a list of points no matter its length as long as it has an even amount of coordinates.
+            the function is triggered upon the left mouse click and each click adds a points to the list.
+        """
         self.PolyPoints.append((event.x, event.y))
         self.delete(self.polygon)
         self.polygon=self.create_polygon(self.PolyPoints,outline="black", fill="")
         print(self.coords(self.polygon))
 
     def stop_polygon(self,event):
+        """
+            this function is triggered upon a double left mouse click with the polygon drawing mode exclusivly and on addition to triggering the addition of another point to the list before this functions trigger
+            it creates a string which consists of the shape name(polygon) the amout of vertexes it has and all of their coordinates
+            then a callback is called with the construced string as a parameter
+        """
         Ccoords=self.coords(self.polygon)
         coords=self.convert_poly_2str(Ccoords)
         vertexes=len(self.PolyPoints)
@@ -483,6 +513,10 @@ class DrawCanvas(tk.Canvas):
         self.PolyPoints=[]
 
     def add_shape(self,details)->list:
+        """
+            this function recives a string as shape details and parses them, after that it creates a canvas shape object according to the details in the string recived in the parameter
+            then returns the shape object
+        """
         shapeProperties = details.split(' ')
         if shapeProperties[0] == "square":
            coords = shapeProperties[2].split(";")
@@ -512,26 +546,44 @@ class DrawCanvas(tk.Canvas):
         return current_shape_item
 
     def draw_shape_bb(self,Sid):
+        """
+            this function deletes a bounding box from the canvas if it exists and then creates a bounding box around the shape whose id is provided in the parameters
+        """
         self.delete("bounding_box")
         if Sid:
             x1, y1, x2, y2 = self.bbox(Sid)
             self.create_rectangle(x1, y1, x2, y2, outline="red", tags="bounding_box")
 
     def remove_shape(self,Sid):
+        """
+            this function deletes a shape from the canvas while also deleting a bounding box if it exists
+        """
         if Sid:
             self.delete(Sid)
             self.delete("bounding_box")
 
     def get_center(self,x1, y1, x2, y2):
+        """
+            this function is used to calculate the center of a circle using the 2 edges of the circle
+            returns the x and y coordinates of the center
+        """
         center_x = (x1 + x2) / 2
         center_y = (y1 + y2) / 2
         return center_x, center_y
 
     def get_radius(self,x1, x2):
+        """
+            this function calculates the radius of a circle based on the x values of the 2 edges of the circle
+            return the radius of the circle
+        """
         radius = abs(x2 - x1) / 2
         return radius
     
     def get_circle_points(self,Sradius,Scoords):
+        """
+            this function recalculates the edges of a circle based on the circles radius and its previous edges
+            returns its new edges coordinates
+        """
         radius=float(Sradius)
         Ccoords=[]
         Ccoords.append(float(Scoords[0]) - radius)
@@ -541,11 +593,19 @@ class DrawCanvas(tk.Canvas):
 
         return Ccoords
     def convert_poly_2float(self,Spoints:list):
+        """
+            this function converts a list of points from strings into a point list of floats
+            return the float list
+        """
         Fpoints=[]
         for cord in Spoints:
             Fpoints.append(float(cord))
         return Fpoints
     def convert_poly_2str(self,Fpoints:list):
+        """
+            this function converts a list of points from floats into a point list of strings
+            return the string list
+        """
         Spoints=""
         count=0
         for cord in Fpoints:
@@ -556,6 +616,9 @@ class DrawCanvas(tk.Canvas):
         return Spoints
 
     def on_clear(self,event):
+        """
+            this functions clears the canvas
+        """
         self.delete("all")
 
     def CretaeSceenShotOfDraws(self):
