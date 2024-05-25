@@ -5,7 +5,16 @@ from OpenSSL import crypto
 import socket
 import ipaddress
 
+
 def generate_self_signed_certificate(cert_file, key_file, cn='192.168.0.60'):
+    """
+        The generate_self_signed_certificate function is used to create a self-signed certificate and a private key,
+        and then write them to files. The function takes three parameters: cert_file, key_file, and cn (Common Name), which4 defaults to '192.168.0.60'.
+        The function begins by generating a new RSA key pair with a key size of 2048 bits.
+        This is done using the crypto.PKey() function to create a new key object, and then calling the generate_key method on this object.
+        at the end of the function, the certificate and private key are written to files using the dump_certificate and dump_privatekey functions.
+    """
+
     # Generate a new key pair
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA, 2048)

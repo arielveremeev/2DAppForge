@@ -3,6 +3,10 @@ from tkinter import ttk
 
 class Shape_List_frame(ttk.Frame):
     def __init__(self,parent,callbacks,cCallbacks):
+        """
+        The constructor initializes a GUI frame with various widgets for shape manipulation and selection.
+        
+        """
         ttk.Frame.__init__(self, parent)
 
         self.callbacks=callbacks
@@ -85,6 +89,10 @@ class Shape_List_frame(ttk.Frame):
         self.listbox.bind('<<ListboxSelect>>', self.on_select)
 
     def toggle_draw(self):
+        """
+        This function enables drawing buttons and disables transformation buttons in a GUI
+        canvas.
+        """
         self.draw_circle_button.configure(state=tk.ACTIVE)
         self.draw_rectangle_button.configure(state=tk.ACTIVE)
         self.draw_triangle_button.configure(state=tk.ACTIVE)
@@ -99,6 +107,10 @@ class Shape_List_frame(ttk.Frame):
         self.canvascallbacks["on_change_draw"]("draw")
 
     def toggle_edit(self):
+        """
+        The function disables drawing buttons and enables editing buttons in a GUI
+        application.
+        """
         self.draw_circle_button.configure(state=tk.DISABLED)
         self.draw_rectangle_button.configure(state=tk.DISABLED)
         self.draw_triangle_button.configure(state=tk.DISABLED)
@@ -113,11 +125,21 @@ class Shape_List_frame(ttk.Frame):
         self.canvascallbacks["on_change_draw"]("edit")
 
     def Update_list(self,sList:dict):
+        """
+        The function iterates through a dictionary and calls `Update_listSingle` for each
+        key-value pair.
+        
+        """
         #self.listbox.delete(0,tk.END)
         for Sid,details in sList.items():
             self.Update_listSingle(int(Sid),details)
 
     def Update_listSingle(self,srvShapeId:int,details:str):
+        """
+        This function updates a listbox by either deleting an item with a specific ID or
+        inserting a new item based on the provided details.
+        
+        """
         if srvShapeId < 0:
             srvShapeId = -srvShapeId
             # Iterate through each item in the Listbox
@@ -136,10 +158,15 @@ class Shape_List_frame(ttk.Frame):
                 shape= '[{:-5}] {}'.format(int(srvShapeId),Sdetails[0])
             self.listbox.insert(tk.END,shape)
     def ListClear(self):
-        # Clear the listbox and reset all widgets to disabled set us not in session
+        """
+        The ListClear function deletes all items from a listbox.
+        """
         self.listbox.delete(0,tk.END)
 
     def Joined_sess(self):
+        """
+        This function sets certain buttons to be active if `in_sess` is False.
+        """
         if self.in_sess == False:
             self.in_sess=True
             self.draw_mode_button.configure(state=tk.ACTIVE)
@@ -152,14 +179,27 @@ class Shape_List_frame(ttk.Frame):
         
 
     def sel(self):
+        """
+        This function prints the selected option and calls a callback function with the selected option
+        as an argument.
+        """
         print("You selected the option " + str(self.var.get()))
         self.canvascallbacks["on_change_type"](str(self.var.get()))
 
     def edit_shape(self):
+        """
+        This function prints the selected option and triggers a callback with the selected option as
+        an argument.
+        """
         print("you selected the option " + str(self.edit.get()))
         self.canvascallbacks["on_change_edit"](str(self.edit.get()))
 
     def on_select(self,event):
+        """
+        This function handles the selection of an item in a listbox and triggers a callback with the
+        selected shape ID.
+        
+        """
         if self.listbox.curselection():
             selected_shape=self.listbox.curselection()
             index=int(selected_shape[0])
@@ -170,6 +210,10 @@ class Shape_List_frame(ttk.Frame):
             self.delete_btn.config(state=tk.DISABLED)
 
     def delete_shape(self):
+        """
+        This function deletes a selected shape from a listbox and triggers a callback to delete the
+        shape on a canvas.
+        """
         print("delete")
         selected_shape=self.listbox.curselection()
         if(selected_shape):
@@ -181,12 +225,18 @@ class Shape_List_frame(ttk.Frame):
         self.delete_btn.config(state=tk.DISABLED)
 
     def get_shape_id(self,index):
+        """
+        This function retrieves the shape ID from a selected item in a listbox.
+        """
         selected_shape = self.listbox.get(index)
         selected_shapeID=selected_shape[1:6]
         shapeid=selected_shapeID.strip()
         return int(shapeid)
 
     def clear_canvas(self):
+        """
+        This function deletes all shapes from a canvas and clears a listbox.
+        """
         for index in range(self.listbox.size()):
             srvShapeId = self.get_shape_id(index)
             self.canvascallbacks["on_delete_shape"](srvShapeId)

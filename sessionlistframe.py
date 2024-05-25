@@ -3,6 +3,10 @@ from tkinter import ttk
 from dialogs import CreateSessDialog
 class SessionListFrame(ttk.Frame):
     def __init__(self,parent,callbacks):
+        """
+        This Python constructor initializes a GUI frame with buttons and a listbox for managing sessions.
+        
+        """
         ttk.Frame.__init__(self, parent)
 
         self.callbacks=callbacks
@@ -42,6 +46,11 @@ class SessionListFrame(ttk.Frame):
         self.delete_btn.pack(side=tk.RIGHT)
 
     def on_select(self,event):
+        """
+        The `on_select` function enables or disables buttons based on whether an item is selected in a
+        listbox.
+        
+        """
         if self.listbox.curselection():
             self.join_btn.configure(state=tk.ACTIVE)
             self.delete_btn.configure(state=tk.ACTIVE)
@@ -50,6 +59,11 @@ class SessionListFrame(ttk.Frame):
             self.delete_btn.configure(state=tk.DISABLED)
 
     def on_double_click(self,event):
+        """
+        The `on_double_click` function checks if an item is selected in a listbox and opens a dialog for
+        joining a session if an item is selected.
+        
+        """
         if self.listbox.curselection():
             self.open_join_sess_dialog()
         else:
@@ -57,17 +71,28 @@ class SessionListFrame(ttk.Frame):
 
 
     def Update_list(self,sList:dict):
+        """
+        The `Update_list` function deletes all items in a listbox and then inserts new items based on the
+        input dictionary `sList`.
+        
+        """
         self.listbox.delete(0,tk.END)
         for item in sList:
             session=','.join([str(item[0]),str(item[1])])
             self.listbox.insert(tk.END,session)
 
     def open_create_sess_dialog(self):
+        """
+        This function opens a dialog window for creating a session.
+        """
         dialog=CreateSessDialog(self,self.callbacks)
         dialog.grab_set()
         self.wait_window(dialog)
 
     def open_join_sess_dialog(self):
+        """
+        This function opens a dialog box to join a selected session and updates the UI accordingly.
+        """
         seleceted_sess=self.listbox.get(self.listbox.curselection())
         if(seleceted_sess):
             details=seleceted_sess.split(',')
@@ -82,6 +107,10 @@ class SessionListFrame(ttk.Frame):
         
     
     def delete_sess(self):
+        """
+        This function deletes a selected session by extracting the session name from a listbox and
+        calling a callback function with the session name as an argument.
+        """
         seleceted_sess=self.listbox.get(self.listbox.curselection())
         if(seleceted_sess):
             sessname=seleceted_sess.split(",")[0]
@@ -91,6 +120,9 @@ class SessionListFrame(ttk.Frame):
             pass
 
     def Leave_Sess(self):
+        """
+        The  function checks if there is a current session and performs certain actions if there is.
+        """
         if self.current_sess != "":
             self.callbacks["on_leave_session"]()
 

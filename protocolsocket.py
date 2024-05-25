@@ -10,10 +10,6 @@ class ProtocolSocketWrapper:
         """
         The `__init__` function initializes a socket object, either creating a new one or using a provided
         socket.
-        
-        :param sock: The `sock` parameter in the `__init__` method of the class is used to either create a
-        new socket or save an existing socket provided by the user. If `sock` is `None`, a new socket is
-        created using `socket.socket(socket.AF_INET, socket.SOCK_STREAM)`
         """
         if sock is None:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -24,13 +20,6 @@ class ProtocolSocketWrapper:
         """
         The `connect` function establishes a connection to a specified host and port.
         
-        :param host: The `host` parameter in the `connect` method is typically a string representing the
-        hostname or IP address of the server to which you want to establish a connection. It is the address
-        of the remote machine you want to connect to
-        :param port: The `port` parameter in the `connect` method is used to specify the port number to
-        which the socket will connect on the remote host. Ports are communication endpoints that allow
-        different services or processes to communicate over a network. Each service or process listens on a
-        specific port for incoming connections
         """
         """"""
         self.sock.connect((host, port))
@@ -40,9 +29,6 @@ class ProtocolSocketWrapper:
         The `send` function takes a message, adds the length of the message to the beginning of the message formatted as {takes exactly 10 spaces},
         and then sends the encoded message over a socket.
         
-        :param msg: The `send` method takes a message (`msg`) as input and sends it over a socket
-        connection. The message is first formatted to include the length of the message followed by the
-        message itself, and then it is sent over the socket connection after encoding it in UTF-8
         """
         
         msg = f'{len(msg):<{10}}' + msg
@@ -68,12 +54,6 @@ class ProtocolSocketWrapper:
         The `recv_all` function reads a specified number of bytes from a socket and returns the data as a
         UTF-8 decoded string.
         
-        :param n: The parameter `n` in the `recv_all` method represents the total number of bytes that the
-        method is expected to receive before returning the complete data. The method reads data from a
-        socket (`self.sock`) in chunks until it has received `n` bytes in total
-        :return: The `recv_all` method returns the received data as a UTF-8 decoded string if the data is
-        successfully received within the specified length `n`. If no data is received or an error occurs
-        during the reception, it returns `None`.
         """
         data = b''
         while len(data) < n:

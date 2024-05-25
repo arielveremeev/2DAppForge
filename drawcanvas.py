@@ -8,13 +8,6 @@ class DrawCanvas(tk.Canvas):
         This Python function initializes a canvas with various attributes and variables for shape
         manipulation.
         
-        :param parent: The `parent` parameter in the `__init__` method is typically a reference to the
-        parent widget or container where the canvas will be placed. It is used to specify where the canvas
-        should be created within the GUI hierarchy. This parent widget could be a `Tk` root window, a `
-        :param callbacks: The `callbacks` parameter in the `__init__` method is likely a dictionary or a
-        collection of functions that are used to handle events or actions within the canvas widget. These
-        callbacks could be functions that are called when certain events occur, such as when a shape is
-        selected, edited, or moved
         """
         tk.Canvas.__init__(self,parent,bg="white")
         
@@ -36,12 +29,9 @@ class DrawCanvas(tk.Canvas):
 
     def change_draw_type(self,text):
         """
-        This function changes the operating mode:edit existing shapes or drawnew shapes
+        This function changes the operating mode:edit existing shapes or draw new shapes
         based on the input text and prints the current drawing type.
         
-        :param text: The `change_draw_type` method takes a `text` parameter as input. This method checks if
-        the `text` parameter is not empty. If it's not empty, it sets the `selectedtype` attribute of the
-        object to the value of `text`. Then, it checks if the `
         """
         if text:
             self.selectedtype=text
@@ -55,8 +45,6 @@ class DrawCanvas(tk.Canvas):
         """
         The function changes the drawn shape type and updates the drawing behavior accordingly.
         
-        :param text: The `change_shape_type` method in the code snippet is a part of a class that seems to
-        be related to drawing shapes on a canvas. The method takes a `text` parameter as input
         """
         if text:
             self.selectedshape=text
@@ -76,10 +64,6 @@ class DrawCanvas(tk.Canvas):
         """
         The function sets the selected edit type and binds specific mouse events based on the selected edit type.
         
-        :param text: The `change_edit_type` method in the code snippet you provided takes a `text`
-        parameter. This parameter is used to determine the type of editing action to be performed on a
-        shape. The method updates the `selectededit` attribute with the value of the `text` parameter and
-        then binds specific
         """
         if text:
             self.selectededit=text
@@ -127,9 +111,6 @@ class DrawCanvas(tk.Canvas):
         This function handles actions when a shape is clicked, including deleting debug shapes, identifying
         the clicked shape, and initiating drag functionality.
         
-        :param event: The `event` parameter in the `on_shape_click` function is typically an object that
-        contains information about the event that triggered the function. This can include details such as
-        the type of event (e.g., mouse click), the coordinates of the event (e.g., x and y position), and
         """
 
         print("on shape pressed")
@@ -159,10 +140,6 @@ class DrawCanvas(tk.Canvas):
         """
         The `move_shape` function updates the position of a shape based on the user's drag movement.
         
-        :param event: The `event` parameter in the `move_shape` method is typically an event object that
-        contains information about the event that triggered the method. This could be a mouse click, mouse
-        movement, key press, etc. The event object usually contains attributes like `x` and `y` which
-        represent the
         """
         if self.drag_shape_id is not None:
             delta_x = event.x - self.start_drag_x
@@ -178,10 +155,6 @@ class DrawCanvas(tk.Canvas):
         The function `stop_move` checks if a shape is being dragged and calls a callback function with the
         shape's ID and position before resetting the drag shape ID.
         
-        :param event: The `event` parameter in the `stop_move` method is typically an event object that
-        contains information about the event that triggered the method. This could be a mouse click, key
-        press, or any other user interaction that caused the method to be called. The event object may
-        contain details such as the
         """
         if self.drag_shape_id is not None:
             self.callbacks["on_shape_move"](self.drag_shape_id,self.move_x,self.move_y)
@@ -193,9 +166,6 @@ class DrawCanvas(tk.Canvas):
         each event(spin of the mouse wheel) scales the shape by 5%,mousewheel up increases by 5%,mousewheel down decreases by 5%
         the scaling is done by moving the vertex on a line thats intercepts the center of the shape and the coresponding vertex
         
-        :param event: The `event` parameter in the `scale_shape` method is an object that represents an
-        event that has occurred, such as a mouse click or key press. In this context, it seems to be related
-        to a mouse wheel scroll event (`event.delta` is used to determine the direction and amount of
         """
         if self.drag_shape_id is not None:
             size =(5*event.delta)/120
@@ -231,9 +201,6 @@ class DrawCanvas(tk.Canvas):
         The function is called when a shape is double clicked while the scale edit mode is selected.
         it updates the scale of a shape and triggers a callback function with the shape's ID and the scale value.
         
-        :param event: It looks like the `send_scale` method is a part of a class, and it takes an `event`
-        parameter. The method checks if `self.drag_shape_id` is not None, prints `self.aggregate`, and then
-        calls a callback function `on_shape_scale` with `self.drag_shape
         """
         if self.drag_shape_id is not None:
             print(self.aggregate)
@@ -246,9 +213,6 @@ class DrawCanvas(tk.Canvas):
         The `rotate_shape` function rotates a shape around its center based on the mouse wheel event.
         each mousewheel event spins the shape by 5 degrees using a trigonometrical function to recalculate the new vertex positions
         
-        :param event: The `event` parameter in the `rotate_shape` method is used to capture the event that
-        triggers the rotation of a shape. In this specific context, the rotation angle is determined based
-        on the `delta` attribute of the event. If the `delta` is positive, the angle is set to
         """
         if self.drag_shape_id is not None:
             angle=5 if event.delta > 0 else -5
@@ -290,9 +254,6 @@ class DrawCanvas(tk.Canvas):
         """
         This function sends the aggregated angle to the specified callback function.
         
-        :param event: The `send_rotate` method seems to be a part of a class in Python. It takes an `event`
-        parameter, which is likely an event object that triggered the rotation action. The method checks if
-        `drag_shape_id` is not None, prints the `aggregate` attribute, and then calls
         """
         if self.drag_shape_id is not None:
             print(self.aggregate)        
@@ -304,12 +265,6 @@ class DrawCanvas(tk.Canvas):
         """
         This function calculates the center point of a set of coordinates by averaging the x and y values.
         
-        :param coords: The `coords` parameter in the `calc_center` function is expected to be a list of
-        coordinates. Each pair of coordinates represents the x and y coordinates of a point. The function
-        calculates the average x and y coordinates of all the points in the list and returns them as a list
-        `[avgX
-        :return: The function `calc_center` is returning a list containing the average X and Y coordinates
-        calculated from the input list of coordinates.
         """
         count=0
         avgX,avgY=0,0
@@ -328,9 +283,6 @@ class DrawCanvas(tk.Canvas):
         The function `draw_scale_star3debug` in Python draws lines from a given point to the canvas
         boundaries for debugging purposes.
         
-        :param Sid: The `Sid` parameter in the `draw_scale_star3debug` function seems to represent the ID of
-        a shape on a canvas. This function appears to be drawing lines from the center of the canvas to the
-        edges based on the coordinates of the shape represented by `Sid`. The purpose seems to be
         """
         if Sid:
             coords = self.coords(Sid)
@@ -408,7 +360,6 @@ class DrawCanvas(tk.Canvas):
         """
             this function is triggered on the click of the left mouse button and creates a shape object.
             the shape object is created based on the selected drawing type. 
-            this function is for all modes except polygon which has its own start_draw function
         """
         self.start_x = event.x
         self.start_y = event.y
@@ -431,7 +382,6 @@ class DrawCanvas(tk.Canvas):
         """
             this function is triggered when u drag the mouse with the left mouse button held and it redraws the shape object.
             it redraws the shape object based on the selected draw type and the position of the mouse cursor on the canvas
-            this function is for all modes except polygon which has its own draw function
         """
         if self.current_shape_item is not None:
             if(self.selectedshape=="circle"):
@@ -452,7 +402,6 @@ class DrawCanvas(tk.Canvas):
             this function is triggered on the release of the left mouse button and it saves all the coordinates of the current shape object (and the radius if its a circle)
             after they are saved a message a string is construced which consists of the name of the shape the amount of vertexes it has and its coordinates(and a radius if its a circle)
             then a callback is called with the construced string as a parameter
-            this function is for all shapes except polygon which has its own stop_draw function
         """
         if self.current_shape_item is not None:
             Ccoords=self.coords(self.current_shape_item)
@@ -496,7 +445,7 @@ class DrawCanvas(tk.Canvas):
     def stop_polygon(self,event):
         """
             this function is triggered upon a double left mouse click with the polygon drawing mode exclusivly and on addition to triggering the addition of another point to the list before this functions trigger
-            it creates a string which consists of the shape name(polygon) the amout of vertexes it has and all of their coordinates
+            it creates a string which consists of the shape name(polygon) the amount of vertexes it has and all of their coordinates
             then a callback is called with the construced string as a parameter
         """
         Ccoords=self.coords(self.polygon)
@@ -622,7 +571,7 @@ class DrawCanvas(tk.Canvas):
         self.delete("all")
 
     def CretaeSceenShotOfDraws(self):
-        ''' Create a screenshot of the current canvas by redrswing all the shapes on a new PIL.Image and returning it
+        ''' Create a screenshot of the current canvas by redrawing all the shapes on a new PIL.Image and returning it
         '''
         # canvas_image = self.canvas.postscript(file ="dima.ps")
         
