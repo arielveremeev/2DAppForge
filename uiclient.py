@@ -513,6 +513,7 @@ class GUI(tk.Tk):
             self.client_socket.send(("print_users,all"))
             self.login_btn.configure(state=tk.DISABLED)
             self.disconnect_btn.configure(state=tk.ACTIVE)
+            self.session_list_widget.on_successful_login()
         else:
             self.client_socket.close()
             self.client_socket=None
@@ -547,7 +548,10 @@ class GUI(tk.Tk):
         self.login_btn.configure(state=tk.ACTIVE)
         self.user_list.delete(0,tk.END)
         self.session_list_widget.Update_list({})
+        self.session_list_widget.on_disconect()
         self.shape_list_widget.ListClear()
+        self.shape_list_widget.clear_canvas()
+        self.shape_list_widget.on_disconnect()
 
     def load_file(self):
         """

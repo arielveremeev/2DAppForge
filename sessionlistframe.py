@@ -39,11 +39,21 @@ class SessionListFrame(ttk.Frame):
         self.join_btn.pack(side=tk.RIGHT)
 
         self.create_btn=ttk.Button(self.nav_bar,text="create",command=self.open_create_sess_dialog)
+        self.create_btn.configure(state=tk.DISABLED)
         self.create_btn.pack(side=tk.RIGHT)
 
         self.delete_btn=ttk.Button(self.nav_bar,text="delete",command=self.delete_sess)
         self.delete_btn.configure(state=tk.DISABLED)
         self.delete_btn.pack(side=tk.RIGHT)
+
+    def on_successful_login(self):
+        self.create_btn.configure(state=tk.ACTIVE)
+
+    def on_disconect(self):
+        self.leave_btn.configure(state=tk.DISABLED)
+        self.join_btn.configure(state=tk.DISABLED)
+        self.create_btn.configure(state=tk.DISABLED)
+        self.delete_btn.configure(state=tk.DISABLED)
 
     def on_select(self,event):
         """

@@ -243,3 +243,16 @@ class Shape_List_frame(ttk.Frame):
         self.listbox.delete(0,tk.END)
         self.canvascallbacks["on_clear_canvas"]()
 
+    def on_disconnect(self):
+        self.draw_mode_button.configure(state=tk.DISABLED)
+        self.draw_circle_button.configure(state=tk.DISABLED)
+        self.draw_rectangle_button.configure(state=tk.DISABLED)
+        self.draw_triangle_button.configure(state=tk.DISABLED)
+        self.draw_polygon_button.configure(state=tk.DISABLED)
+        
+        self.edit_mode_button.configure(state=tk.DISABLED)
+        self.move_btn.configure(state=tk.DISABLED)
+        self.scale_btn.configure(state=tk.DISABLED)
+        self.rotate_btn.configure(state=tk.DISABLED)
+        self.clear_btn.configure(state=tk.DISABLED)
+        self.delete_btn.configure(state=tk.DISABLED)
