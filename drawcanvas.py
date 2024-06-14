@@ -154,6 +154,7 @@ class DrawCanvas(tk.Canvas):
             delta_y = event.y - self.start_drag_y
             self.move(self.drag_shape_id,delta_x,delta_y)
             self.draw_shape_bb(self.drag_shape_id)
+            self.draw_scale_star3debug(self.drag_shape_id)
             self.start_drag_x,self.start_drag_y=event.x,event.y
             self.move_x+=delta_x
             self.move_y+=delta_y
