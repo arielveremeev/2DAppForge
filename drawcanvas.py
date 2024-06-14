@@ -576,6 +576,11 @@ class DrawCanvas(tk.Canvas):
         """
         self.delete("all")
 
+    def has_tags(self, shape):
+        # Get the tags of the shape
+        tags = self.gettags(shape)
+        return bool(tags)
+
     def CretaeSceenShotOfDraws(self):
         ''' Create a screenshot of the current canvas by redrawing all the shapes on a new PIL.Image and returning it
         '''
@@ -590,11 +595,14 @@ class DrawCanvas(tk.Canvas):
 
         #loop for calculating the bounding box of all the shapes on the canvas
         for shape_id in all_shapes:
-            bbox = self.bbox(shape_id)
-            min_x = min(min_x, bbox[0])
-            min_y = min(min_y, bbox[1])
-            max_x = max(max_x, bbox[2])
-            max_y = max(max_y, bbox[3])
+            if self.has_tags(shape_id):
+                print("Edit/debug shape")
+            else:
+                bbox = self.bbox(shape_id)
+                min_x = min(min_x, bbox[0])
+                min_y = min(min_y, bbox[1])
+                max_x = max(max_x, bbox[2])
+                max_y = max(max_y, bbox[3])
         # the output image size is 10% more that boundix box of all shapes
         image = Image.new("RGB", (int((max_x - min_x) * 1.1), int((max_y - min_y) * 1.1)), "white")
         draw = ImageDraw.Draw(image)
@@ -603,15 +611,18 @@ class DrawCanvas(tk.Canvas):
         min_y *= 0.9
         
         for shape_id in all_shapes:
-            shape_type = self.type(shape_id)
-            cCoords=self.coords(shape_id)
-            cCoords = [cCoords[i] - min_x if i % 2 == 0 else cCoords[i] - min_y for i in range(len(cCoords))]
-            if shape_type == "rectangle":
-                draw.rectangle(cCoords, outline="black")
-            elif shape_type == "oval":
-                draw.ellipse(cCoords, outline="black")
-            elif shape_type == "line":
-                draw.line(cCoords, outline="black")
-            elif shape_type == "polygon":
-                draw.polygon(cCoords, outline="black")
+            if self.has_tags(shape_id):
+                print("Edit/debug shape")
+            else:
+                shape_type = self.type(shape_id)
+                cCoords=self.coords(shape_id)
+                cCoords = [cCoords[i] - min_x if i % 2 == 0 else cCoords[i] - min_y for i in range(len(cCoords))]
+                if shape_type == "rectangle":
+                    draw.rectangle(cCoords, outline="black")
+                elif shape_type == "oval":
+                    draw.ellipse(cCoords, outline="black")
+                elif shape_type == "line":
+                    draw.line(cCoords, outline="black")
+                elif shape_type == "polygon":
+                    draw.polygon(cCoords, outline="black")
         return image
