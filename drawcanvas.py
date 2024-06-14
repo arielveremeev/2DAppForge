@@ -66,8 +66,17 @@ class DrawCanvas(tk.Canvas):
         
         """
         if text:
+            if self.selectededit:
+                if self.selectededit == "scale_shape":
+                    self.send_scale(tk.Event())
+                elif self.selectededit == "rotate_shape":
+                    self.send_rotate(tk.Event())
+                self.delete("bounding_box")
+                self.delete("debug_shapes")
+
             self.selectededit=text
             print("selected edit type is " + self.selectededit)
+
             self.unbind("<B1-Motion>")
             self.unbind("<ButtonRelease-1>")
             self.unbind("<MouseWheel>")
