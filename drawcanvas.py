@@ -351,10 +351,7 @@ class DrawCanvas(tk.Canvas):
             print("drawcanvas::edit_shape:: coords from canvas",self.coords(int(Sid)))
             print("drawcanvas::edit_shape:: coords from server",details)
             shapeProperties = details.split(' ')
-            if shapeProperties[0] == "square":
-                coords = shapeProperties[2].split(";")
-                self.coords(int(Sid),float(coords[0]), float(coords[1]), float(coords[6]), float(coords[7]))
-            elif(shapeProperties[0] == "triangle" or shapeProperties[0] == "polygon"):
+            if(shapeProperties[0] == "triangle" or shapeProperties[0] == "polygon" or shapeProperties[0] == "square"):
                 Scoords=shapeProperties[2].split(";")
                 Fcoords=self.convert_poly_2float(Scoords)
                 self.coords(int(Sid),Fcoords)
@@ -372,8 +369,8 @@ class DrawCanvas(tk.Canvas):
         self.start_x = event.x
         self.start_y = event.y
         if self.selectedshape == "rectangle":
-            self.current_shape_item = self.create_rectangle(
-                self.start_x, self.start_y, self.start_x, self.start_y, outline="black"
+            self.current_shape_item = self.create_polygon(
+                self.start_x, self.start_y, self.start_x, self.start_y,self.start_x, self.start_y,self.start_x, self.start_y, outline="black",fill=""
             )
 
         elif self.selectedshape == "triangle":
@@ -403,7 +400,7 @@ class DrawCanvas(tk.Canvas):
                     self.coords(self.current_shape_item,self.start_x,self.start_y,event.x,event.y,(self.start_x - event.x) + self.start_x,event.y)
             else:
                 x, y = event.x, event.y
-                self.coords(self.current_shape_item, self.start_x, self.start_y, x, y)
+                self.coords(self.current_shape_item, self.start_x, self.start_y, x, self.start_y, x, y, self.start_x, y)
     
     def stop_draw(self, event):
         """
@@ -416,7 +413,7 @@ class DrawCanvas(tk.Canvas):
             shape=""
             print(Ccoords)
             if(self.selectedshape == "rectangle"):
-                coords=str(Ccoords[0]) + ";"+str(Ccoords[1]) + ";" + str(Ccoords[2]) + ";" + str(Ccoords[1]) + ";" + str(Ccoords[0])+ ";" + str(Ccoords[3])+ ";" + str(Ccoords[2])+ ";" + str(Ccoords[3])
+                coords=self.convert_poly_2str(Ccoords)
                 shape="square 4 "+ coords
                 print(shape)
 
@@ -477,8 +474,8 @@ class DrawCanvas(tk.Canvas):
         shapeProperties = details.split(' ')
         if shapeProperties[0] == "square":
            coords = shapeProperties[2].split(";")
-           current_shape_item = self.create_rectangle(
-                float(coords[0]), float(coords[1]), float(coords[6]), float(coords[7]), outline="black"
+           current_shape_item = self.create_polygon(
+                float(coords[0]), float(coords[1]), float(coords[2]), float(coords[3]),float(coords[4]), float(coords[5]),float(coords[6]),float(coords[7]),outline="black",fill=""
             )
            
         elif(shapeProperties[0] == "triangle"):
