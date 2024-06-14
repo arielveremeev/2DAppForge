@@ -127,14 +127,22 @@ class DrawCanvas(tk.Canvas):
             self.drag_shape_id = shapes_found[0]
             if self.drag_shape_id:
                 print("shape pressed")
-                self.draw_shape_bb(self.drag_shape_id)
-                self.start_drag_x,self.start_drag_y=event.x,event.y
-                self.move_x,self.move_y=0,0
-                self.start_coords=self.coords(self.drag_shape_id)
-                self.draw_scale_star3debug(self.drag_shape_id)
+                if self.is_inside_shape(event.x, event.y,self.drag_shape_id):
+                    self.draw_shape_bb(self.drag_shape_id)
+                    self.start_drag_x,self.start_drag_y=event.x,event.y
+                    self.move_x,self.move_y=0,0
+                    self.start_coords=self.coords(self.drag_shape_id)
+                    self.draw_scale_star3debug(self.drag_shape_id)
+                else:
+                    self.delete("bounding_box")
                 
-                
-    
+    def is_inside_shape(self, x, y, shape):
+        # Get the bounding box of the shape
+        bbox = self.bbox(shape)
+        if bbox[0] <= x <= bbox[2] and bbox[1] <= y <= bbox[3]:
+            return True
+        return False
+
 
     def move_shape(self,event):
         """
@@ -581,6 +589,8 @@ class DrawCanvas(tk.Canvas):
         min_y = float("inf")
         max_x = float("-inf")
         max_y = float("-inf")
+
+        #loop for calculating the bounding box of all the shapes on the canvas
         for shape_id in all_shapes:
             bbox = self.bbox(shape_id)
             min_x = min(min_x, bbox[0])
