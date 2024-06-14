@@ -144,11 +144,14 @@ class DatabaseManager:
         cursor=self.cursor.execute("SELECT name FROM sessions WHERE name=(?)",(session,))
         result=cursor.fetchone()
         if result:
-            cursor.execute("DELETE FROM sessions WHERE name=(?)",(session,))
-            print(session)
-            print(result)
-            self.conn.commit()
-            return True
+            cursor=self.cursor.execute('SELECT username FROM active_session_users WHERE session= (?)',(session,))
+            rows=cursor.fetchall()
+            if len(rows) == 0:
+                cursor.execute("DELETE FROM sessions WHERE name=(?)",(session,))
+                print(session)
+                print(result)
+                self.conn.commit()
+                return True
         return False
 
 

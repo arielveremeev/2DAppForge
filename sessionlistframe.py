@@ -63,7 +63,10 @@ class SessionListFrame(ttk.Frame):
         """
         if self.listbox.curselection():
             self.join_btn.configure(state=tk.ACTIVE)
-            self.delete_btn.configure(state=tk.ACTIVE)
+            if self.current_sess:
+                pass
+            else:
+                self.delete_btn.configure(state=tk.ACTIVE)
         else:
             self.join_btn.config(state=tk.DISABLED)
             self.delete_btn.configure(state=tk.DISABLED)
