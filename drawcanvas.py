@@ -20,6 +20,7 @@ class DrawCanvas(tk.Canvas):
         self.start_x = None
         self.start_y = None
         self.current_shape_item = None
+        self.polygon=None
         self.debug_shapes = []
         self.drag_shape_id = None
         self.aggregate=1.0
@@ -34,8 +35,14 @@ class DrawCanvas(tk.Canvas):
         
         """
         if text:
+            self.unbind("<B1-Motion>")
+            self.unbind("<ButtonRelease-1>")
+            self.unbind("<MouseWheel>")
+            self.unbind("<Double-Button-1>")
             self.selectedtype=text
             if(self.selectedtype == "edit"):
+                if self.polygon is not None:
+                    self.stop_polygon(tk.Event())
                 self.toggle_edit()
             else:
                 self.toggle_draw()
@@ -143,13 +150,22 @@ class DrawCanvas(tk.Canvas):
                     self.start_coords=self.coords(self.drag_shape_id)
                     self.draw_scale_star3debug(self.drag_shape_id)
                 else:
+                    self.drag_shape_id=None
                     self.delete("bounding_box")
                 
     def is_inside_shape(self, x, y, shape):
         # Get the bounding box of the shape
-        bbox = self.bbox(shape)
-        if bbox[0] <= x <= bbox[2] and bbox[1] <= y <= bbox[3]:
-            return True
+        if self.type(shape) == "oval":
+            coords = self.coords(shape)
+            rx = (coords[2] - coords[0]) / 2
+            ry = (coords[3] - coords[1]) / 2
+            cx = coords[0] + rx
+            cy = coords[1] + ry
+            return ((x - cx) ** 2 / rx ** 2 + (y - cy) ** 2 / ry ** 2) <= 1
+        else:
+            bbox = self.bbox(shape)
+            if bbox[0] <= x <= bbox[2] and bbox[1] <= y <= bbox[3]:
+                return True
         return False
 
 
@@ -187,31 +203,27 @@ class DrawCanvas(tk.Canvas):
         """
         if self.drag_shape_id is not None:
             size =(5*event.delta)/120
-            if len(self.start_coords) == 4:
-                cCoords=self.coords(self.drag_shape_id)
-                self.coords(self.drag_shape_id,cCoords[0] - size, cCoords[1] - size, cCoords[2] + size, cCoords[3] + size)
-            else:
-                scale_factor=0
-                avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
-                newX,newY=None,None
-                coords=self.coords(self.drag_shape_id)
-                cCoords=[]
-                scale_factor = 1.05 if event.delta > 0 else 0.95
-                self.aggregate =self.aggregate * scale_factor
-                print("aggregate",self.aggregate)
-                    
-                for i in range(0,len(self.coords(self.drag_shape_id)),2):
-                    x=coords[i]
-                    y=coords[i+1]
-                    dir_x = x - avgX
-                    dir_y = y - avgY
+            scale_factor=0
+            avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
+            newX,newY=None,None
+            coords=self.coords(self.drag_shape_id)
+            cCoords=[]
+            scale_factor = 1.05 if event.delta > 0 else 0.95
+            self.aggregate =self.aggregate * scale_factor
+            print("aggregate",self.aggregate)
                 
-                    newX = avgX + dir_x * scale_factor
-                    newY = avgY + dir_y * scale_factor
+            for i in range(0,len(self.coords(self.drag_shape_id)),2):
+                x=coords[i]
+                y=coords[i+1]
+                dir_x = x - avgX
+                dir_y = y - avgY
+            
+                newX = avgX + dir_x * scale_factor
+                newY = avgY + dir_y * scale_factor
 
-                    cCoords.append(newX)
-                    cCoords.append(newY)
-                self.coords(self.drag_shape_id,cCoords)
+                cCoords.append(newX)
+                cCoords.append(newY)
+            self.coords(self.drag_shape_id,cCoords)
             self.draw_shape_bb(self.drag_shape_id)
 
     def send_scale(self,event):
@@ -233,35 +245,38 @@ class DrawCanvas(tk.Canvas):
         
         """
         if self.drag_shape_id is not None:
-            angle=5 if event.delta > 0 else -5
-            avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
-            cCoords=[]
-            # Convert the angle from degrees to radians
-            angle_rad = math.radians(angle)
-            
-            # Create a new list for the rotated vertices
-            rotated_vertices = []
+            if self.type(self.drag_shape_id) == "oval":
+                pass
+            else:
+                angle=5 if event.delta > 0 else -5
+                avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
+                cCoords=[]
+                # Convert the angle from degrees to radians
+                angle_rad = math.radians(angle)
+                
+                # Create a new list for the rotated vertices
+                rotated_vertices = []
 
-            self.aggregate_angle+=angle
-            for i in range(0, len(self.coords(self.drag_shape_id)), 2):
-                x = self.coords(self.drag_shape_id)[i]
-                y = self.coords(self.drag_shape_id)[i + 1]
-                
-                # Calculate the position relative to the center
-                rel_x = x - avgX
-                rel_y = y - avgY
-                
-                # Apply the rotation transformation
-                new_rel_x = rel_x * math.cos(angle_rad) - rel_y * math.sin(angle_rad)
-                new_rel_y = rel_x * math.sin(angle_rad) + rel_y * math.cos(angle_rad)
-                
-                # Calculate the new vertex position
-                new_x = avgX + new_rel_x
-                new_y = avgY + new_rel_y
-                
-                # Append the new vertex to the rotated vertices list
-                cCoords.append(new_x)
-                cCoords.append(new_y)
+                self.aggregate_angle+=angle
+                for i in range(0, len(self.coords(self.drag_shape_id)), 2):
+                    x = self.coords(self.drag_shape_id)[i]
+                    y = self.coords(self.drag_shape_id)[i + 1]
+                    
+                    # Calculate the position relative to the center
+                    rel_x = x - avgX
+                    rel_y = y - avgY
+                    
+                    # Apply the rotation transformation
+                    new_rel_x = rel_x * math.cos(angle_rad) - rel_y * math.sin(angle_rad)
+                    new_rel_y = rel_x * math.sin(angle_rad) + rel_y * math.cos(angle_rad)
+                    
+                    # Calculate the new vertex position
+                    new_x = avgX + new_rel_x
+                    new_y = avgY + new_rel_y
+                    
+                    # Append the new vertex to the rotated vertices list
+                    cCoords.append(new_x)
+                    cCoords.append(new_y)
 
             print (f"from rotate on canvas [{avgX},{avgY}]:",cCoords)
             self.coords(self.drag_shape_id,cCoords)
