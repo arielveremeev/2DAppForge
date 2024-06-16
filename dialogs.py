@@ -38,14 +38,12 @@ class ConnectDialog(tk.Toplevel):
         self.username_label = tk.Label(self, text="Username:")
         self.username_label.grid(row=1, column=0, padx=5, pady=5)
         self.username_text = tk.StringVar()
-        self.username_text.set("ariel")
         self.username_entry = tk.Entry(self, textvariable=self.username_text)
         self.username_entry.grid(row=1, column=1, padx=5, pady=5)
 
         self.password_label = tk.Label(self, text="Password:")
         self.password_label.grid(row=2, column=0, padx=5, pady=5)
         self.password_text = tk.StringVar()
-        self.password_text.set("1234")
         self.password_entry = tk.Entry(self, show="*", textvariable=self.password_text)
         self.password_entry.grid(row=2, column=1, padx=5, pady=5)
 

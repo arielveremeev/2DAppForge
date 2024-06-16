@@ -23,6 +23,7 @@ class DrawCanvas(tk.Canvas):
         self.polygon=None
         self.debug_shapes = []
         self.drag_shape_id = None
+        self.edit_shape_id=None
         self.aggregate=1.0
         self.aggregate_angle=0
 
@@ -150,6 +151,10 @@ class DrawCanvas(tk.Canvas):
                     self.start_coords=self.coords(self.drag_shape_id)
                     self.draw_scale_star3debug(self.drag_shape_id)
                 else:
+                    if self.aggregate != 1:
+                        self.send_scale(tk.Event())
+                    elif self.aggregate_angle != 0 :
+                        self.send_rotate(tk.Event())
                     self.drag_shape_id=None
                     self.delete("bounding_box")
                 
@@ -202,17 +207,18 @@ class DrawCanvas(tk.Canvas):
         
         """
         if self.drag_shape_id is not None:
+            self.edit_shape_id=self.drag_shape_id
             size =(5*event.delta)/120
             scale_factor=0
-            avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
+            avgX,avgY=self.calc_center(self.coords(self.edit_shape_id))
             newX,newY=None,None
-            coords=self.coords(self.drag_shape_id)
+            coords=self.coords(self.edit_shape_id)
             cCoords=[]
             scale_factor = 1.05 if event.delta > 0 else 0.95
             self.aggregate =self.aggregate * scale_factor
             print("aggregate",self.aggregate)
                 
-            for i in range(0,len(self.coords(self.drag_shape_id)),2):
+            for i in range(0,len(self.coords(self.edit_shape_id)),2):
                 x=coords[i]
                 y=coords[i+1]
                 dir_x = x - avgX
@@ -223,8 +229,8 @@ class DrawCanvas(tk.Canvas):
 
                 cCoords.append(newX)
                 cCoords.append(newY)
-            self.coords(self.drag_shape_id,cCoords)
-            self.draw_shape_bb(self.drag_shape_id)
+            self.coords(self.edit_shape_id,cCoords)
+            self.draw_shape_bb(self.edit_shape_id)
 
     def send_scale(self,event):
         """
@@ -232,11 +238,11 @@ class DrawCanvas(tk.Canvas):
         it updates the scale of a shape and triggers a callback function with the shape's ID and the scale value.
         
         """
-        if self.drag_shape_id is not None:
+        if self.edit_shape_id is not None:
             print(self.aggregate)
-            self.callbacks["on_shape_scale"](self.drag_shape_id,self.aggregate)
+            self.callbacks["on_shape_scale"](self.edit_shape_id,self.aggregate)
         self.aggregate=1.0
-        self.drag_shape_id=None
+        self.edit_shape_id=None
 
     def rotate_shape(self,event):
         """
@@ -245,11 +251,12 @@ class DrawCanvas(tk.Canvas):
         
         """
         if self.drag_shape_id is not None:
-            if self.type(self.drag_shape_id) == "oval":
+            self.edit_shape_id=self.drag_shape_id
+            if self.type(self.edit_shape_id) == "oval":
                 pass
             else:
                 angle=5 if event.delta > 0 else -5
-                avgX,avgY=self.calc_center(self.coords(self.drag_shape_id))
+                avgX,avgY=self.calc_center(self.coords(self.edit_shape_id))
                 cCoords=[]
                 # Convert the angle from degrees to radians
                 angle_rad = math.radians(angle)
@@ -258,9 +265,9 @@ class DrawCanvas(tk.Canvas):
                 rotated_vertices = []
 
                 self.aggregate_angle+=angle
-                for i in range(0, len(self.coords(self.drag_shape_id)), 2):
-                    x = self.coords(self.drag_shape_id)[i]
-                    y = self.coords(self.drag_shape_id)[i + 1]
+                for i in range(0, len(self.coords(self.edit_shape_id)), 2):
+                    x = self.coords(self.edit_shape_id)[i]
+                    y = self.coords(self.edit_shape_id)[i + 1]
                     
                     # Calculate the position relative to the center
                     rel_x = x - avgX
@@ -279,20 +286,20 @@ class DrawCanvas(tk.Canvas):
                     cCoords.append(new_y)
 
             print (f"from rotate on canvas [{avgX},{avgY}]:",cCoords)
-            self.coords(self.drag_shape_id,cCoords)
-            self.draw_shape_bb(self.drag_shape_id)
-            self.draw_scale_star3debug(self.drag_shape_id)
+            self.coords(self.edit_shape_id,cCoords)
+            self.draw_shape_bb(self.edit_shape_id)
+            self.draw_scale_star3debug(self.edit_shape_id)
 
     def send_rotate(self,event):
         """
         This function sends the aggregated angle to the specified callback function.
         
         """
-        if self.drag_shape_id is not None:
+        if self.edit_shape_id is not None:
             print(self.aggregate)        
-            self.callbacks["on_shape_rotate"](self.drag_shape_id,self.aggregate_angle)
+            self.callbacks["on_shape_rotate"](self.edit_shape_id,self.aggregate_angle)
         self.aggregate_angle=0
-        self.drag_shape_id=None
+        self.edit_shape_id=None
 
     def calc_center(self,coords):
         """
